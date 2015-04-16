@@ -1,0 +1,164 @@
+
+REFERENCE:
+
+Keith Noto, Carla Brodley, Saeed Majidi, Diana W. Bianchi, and Donna K. Slonim
+CSAX: Characterizing Systematic Anomalies in eXpression Data
+RECOMB, 2014.
+
+OVERVIEW:
+
+The scripts here run the anomaly detection algorithms presented or discussed in our paper.
+All scripts are written in R (see REQUIREMENTS section below), but some of the R scripts
+make shell calls to compiled C or C++ programs, or to Java programs.
+The anomaly detection algorithms are:
+
+	(i) LOF (lof.r)
+	(ii) One-class SVMs (svm.r)
+	(iii) FRaC (frac.r)
+	(iv) Our algorithm CSAX (csax.r)
+	
+Use the -h option with any script to see usage information and options.  The
+input to any of these are:
+
+	(i) A TRAINING set, consisting of several "normal" samples.  Each sample
+	consists of a real-valued expression measurement for each of a set of genes
+	(the algorithms except for CSAX will work on probeset-level data, but we
+	recommend that you collapse the measurements to the level of genes).  The
+	file format of the training set is tab-delimited ASCII text, with row and
+	column headers, where rows are genes and columns are samples.  For example,
+	see examples.input/example.training.set.
+
+	(ii) A TEST set of unlabeled examples. The file format for the test set is
+	the same as the training set.  The genes in the test set must be identical
+	to those of the training set, in the same order.  See
+	examples.input/example.test.set.
+
+	(iii) in the case of CSAX, a gene set database file.  A gene set database
+	is a collection of gene sets, each a set of genes.  These genes are
+	identified by symbols that match the row headers in the training and test
+	set files.  Gene set database files must be named with the .gmt file
+	extension (GSEA, one of the subroutines of CSAX, will not work otherwise).
+	Each line of a gene set database file is (a) a name, (b) a description, and
+	(c) a list of gene symbols of arbitrary length.  All of this is
+	tab-separated, with one gene set per line.  For example, see
+	examples.input/reactome.gmt.  The .gmt file format is defined formally
+	here:
+	http://www.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GMT:_Gene_Matrix_Transposed_file_format_.28.2A.gmt.29
+
+The output of these algorithms is an anomaly score for each unlabeled test set
+sample.  The higher the anomaly score, the more likely the test set sample is
+anomalous (with respect to the training set).  The scripts will ask you to
+supply a filename in which to store the anomaly scores (in the same order as
+the test set instances appear in the test set input file).
+
+In our paper, we compute the area under the ROC curve (AUC) to evaluate anomaly
+detectors.  If you have binary test set labels you can run auc.r to compute the
+AUC.  The arguments are a file of test set labels and a file of  anomaly
+scores.  The file format of the labels is one 0 or 1 per line (0 means normal,
+1 means anomaly), corresponding to the test set instances in the same order
+that they appear in the test set input file (see
+examples.input/example.test.set.labels).  The file format of the anomaly scores
+is one real-valued anomaly score per line, corresponding to the test set
+instances in the same order they appear in the test set input file.  This file
+will be the output of one of the anomaly detection scripts (e.g., csax.r).
+
+frac.r and csax.r will ask you to supply the name of a directory to store
+output tables.  In the case of FRaC, the output table is an anomaly score for
+each gene, for each test set sample.  In the case of CSAX, there are also gene
+set enrichment tables (i.e., the output of GSEA).  These tables are saved,
+potentially for reuse, and are not automatically deleted.  This is useful if
+you want to kill a process because it is taking too long, or if you want to
+reuse some of the output (for example, the FRaC tables can be used by CSAX, or
+you may wish to run additional bagging iterations with CSAX).  The FRaC output
+files are named 'ns.gz' (they are tab-delimited tables compressed with gzip),
+the GSEA output tables are named '<gene set database name>/test.<q>.xls.gz'
+(where "q" is the test set instance number; i.e., 1,2,3,...).  They are also
+tab-delimited gzipped files.  The output files for each iteration of bagging
+are named 'bag.<b>/ns.gz' and 'bag.<b>/<gsdb name>/test.<q>.xls.gz'.
+
+To get started, run `make` to compile the C LOF code, the C++ SVM code, and the
+C++ FRaC code.  The scripts will look for those executables in relative paths,
+so you must keep the directory structure as it is.  It will also include the R
+code in 'modules/*.r'.
+
+CSAX will take time to run, but it is parallelizable.  For instance, you can run 
+40 iterations of bagging as 40 separate processes, e.g.:
+
+	csax.r  -F 1 -b 1 my.training.set.txt  my.test.set.txt  my.gene.sets.gmt  output.files  # Run bagging iteration #1
+	csax.r  -F 0 -b 2 my.training.set.txt  my.test.set.txt  my.gene.sets.gmt  output.files  # Run bagging iteration #2 (and set -F 0, since there's no need to run on the full training set more than once)
+	...
+	csax.r  -F 0 -b 40 my.training.set.txt  my.test.set.txt  my.gene.sets.gmt  output.files  # Run bagging iteration #40
+
+(Run `csax.r -h` to see the list of options, and see the source code for more
+information.) You can ignore the anomaly scores for all these runs, and once
+they finish and all the FRaC and GSEA output files are created (in this
+example, in the directory 'output.files'), you can run csax.r once to compute
+the anomaly score using all the iterations of bagging:
+
+	csax.r -F 1 -B 40 my.training.set.txt  my.test.set.txt  my.gene.sets.gmt  output.files anomaly.scores.txt
+
+This process will find the output files, recognize that they already exist and
+skip the calls to FRaC and GSEA that create them.  Then it will write the
+anomaly scores to the given filename ('anomaly.scores.txt').  You can further
+parallelize by only running GSEA on a specific test set array.  For example, 
+	
+	csax.r -F 0 -B 12 -Q 4 my.training.set.txt  my.test.set.txt  my.gene.sets.gmt  output.files anomaly.scores.txt
+
+will only create the output files for the fourth test set instance, for the
+12th bagging iteration (see csax.r source code).
+
+The experiments we ran in the paper use our compendium of microarray anomaly
+detection data sets.  For examples and code related to them, see the
+subdirectory 'compendium.experiments' and the README file in that directory.
+
+=====
+
+REQUIREMENTS:
+
+1) R, version >= 2.11.1 (see http://cran.r-project.org/doc/manuals/R-admin.html)
+
+2) gcc and g++ C and C++ compilers.
+
+3) Java, version >= Java(TM) SE Runtime Environment (build 1.6.0_15-b03-219).
+
+=====
+
+INSTALLATION:
+
+Run `make' in this directory.  This compiles the C and C++ programs used by
+these scripts (see lof/ for LOF, svm/ for one-class SVMs and frac/ for FRaC).
+You can run `make clean' to remove the object files.
+
+=====
+
+RUNNING THE SCRIPTS:
+
+All executable R scripts will show a help message if run with the '-h' option.
+The input to most programs includes (i) a training set matrix (rows are genes,
+columns are samples) of "normal" microarrays, and (ii) a test set matrix (rows
+are the exact same genes, columns are other samples).
+
+Some programs will create data files that can take up a lot of space.  You may
+need to clean up after them.
+
+=====
+
+SCRIPTS:
+
+lof.r:  Runs LOF (using the l1 or l2-norm distance metric) on a training/test set.
+
+svm.r:  Runs one-class SVM (using LIBSVM default parameters) on a training/test set.
+
+frac.r:  Runs FRaC (using LIBSVM SVR feature models and normally-distributed
+error models--see paper) on a training/test set.
+
+csax.r:  Runs CSAX (using FRaC as above, and GSEA) on a training/test set.
+As a side-effect, stores FRaC and GSEA output tables to a cache directory
+(potentially for reuse).
+
+(See examples.bash for examples of running these.)
+
+compendium.experiments:  The subdirectory contains scripts for running
+experiments on our compendium of data sets (often on an LSF cluster).  See
+compendium.experiments/README for more information.
+
