@@ -22,6 +22,8 @@ echo -ne "\nRESULT: CSAX AUC=`auc.r examples.input/example.test.set.labels examp
  */
 
 vector<Sample> getData(string matrixFile);
+void printSamples(vector<Sample> samples);
+
 
 int main(int argc, char **argv) {
     if (argc < 8) {
@@ -35,14 +37,8 @@ int main(int argc, char **argv) {
     //get a buffer of the data, implemented as a vector of samples
     vector<Sample> inputBuffer = getData(argv[3]);
     //NOTE: don't know what reactome.gmt is for
+    printSamples(inputBuffer);
 
-    int j = 0;
-    for (auto i = inputBuffer.begin(); i != inputBuffer.end(); i++) {
-        cout << "The " << j << "th" << "sample is: " << endl;
-        (*i).print();
-        cout << endl;
-        j++;
-    }
     //NOTE: for every Sample, add it to
 }
 
@@ -91,6 +87,18 @@ vector<Sample> getData(string matrixFile)
     matrix.close();
     return inputBuffer;
 }
+
+void printSamples(vector<Sample> samples)
+{
+    int j = 0;
+    for (auto i = samples.begin(); i != samples.end(); i++) {
+        cout << "The " << j << "th" << "sample is: " << endl;
+        (*i).print();
+        cout << endl;
+        j++;
+    }
+}
+
 //My main.cpp from hwk5, for reference
 ////main.cpp
 //Jacob Gerace

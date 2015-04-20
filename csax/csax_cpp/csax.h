@@ -11,6 +11,12 @@ using namespace std;
 #ifndef classifier_H
 #define classifier_H
 //comments for each function found in the .cpp implementation
+
+struct GeneScorePair {
+    string gene;
+    float score;
+};
+
 class CSAX
 {
         public:
