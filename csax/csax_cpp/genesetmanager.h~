@@ -5,6 +5,11 @@
 #ifndef GENESETMANAGER_H
 #define GENESETMANAGER_H
 
+#include <map>
+#include <vector>
+#include <iostream>
+using namespace std;
+
 struct GeneSet {
     string name;
     vector<int> rankings;
@@ -15,6 +20,7 @@ class GeneSetManager {
         GeneSetManager();
         void addRankingToGeneset(int ranking, string geneset);
         void sortByMedian();
+        void getAnomalyScore(float gamma, map<string, float> *ES);
     private:
         vector<GeneSet*> genesets;
         map<string, GeneSet*> genesetmap;

@@ -20,6 +20,7 @@ class GeneSetManager {
         GeneSetManager();
         void addRankingToGeneset(int ranking, string geneset);
         void sortByMedian();
+        double getAnomalyScore(float gamma, map<string, float> *ES);
     private:
         vector<GeneSet*> genesets;
         map<string, GeneSet*> genesetmap;

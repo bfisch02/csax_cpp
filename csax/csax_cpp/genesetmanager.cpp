@@ -3,6 +3,7 @@
 // Gene Set Manager Implementation
 
 #include "genesetmanager.h"
+#include <map>
 #include <iostream>
 using namespace std;
 
@@ -26,4 +27,9 @@ void GeneSetManager::addRankingToGeneset(int ranking, string geneset)
 void GeneSetManager::sortByMedian()
 {
     // Sort genesets vector by median
+}
+
+double GeneSetManager::getAnomalyScore(float gamma, map<string, float> *ES)
+{
+
 }
