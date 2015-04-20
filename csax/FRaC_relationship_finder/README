@@ -1,0 +1,92 @@
+
+//////////////////////////////
+//Running and Building FRaC//
+/////////////////////////////
+
+
+To run FRaC, use the runFRaC.sh script, after updating the dataset name, path to data, normal class name, and feature prefix to fit your dataset (The variables will be $datasetname $indirectory $featurePrefix and $normalClassName).  FRaC will build on its own the first time you run it.
+
+You will need a version of gcc that can compile c++ code, bash, and python3 to run FRaC with graph analysis.  FRaC stack allocates a large amount of data.  If a stack overflow occurs, ensure that your user account is not stack-limited.  FRaC has only been tested on linux systems, modifications to the makefile and scripts may be necessary to suit other environments.
+
+FRaC is very slow, especially when analyzing many features.  Set the variable $kl to a percentage of features to heuristically remove in preprocessing.  It's a good idea to start this value out with a high value (like 90), and slowly bring it down to get an idea of how long the process will take.
+
+
+////////////////////
+//FRaC input format//
+/////////////////////
+
+
+FRaC supports multiple input and output formats, but the best supported is the FRaC format, which expects a directory with a collection of files, and outputs multiple results to the same directory.  The FRaC format expects the following:
+
+metadata
+
+The metadata file is a formal description of the schema of the dataset on which FRaC is to be run.  Each training and test instance must follow the format set out in the metadata file.
+
+The metadata file is a tab delimited file consisting of three columns, the first of which is a whitespace free name string, the second of which is a feature type, either "nominal", "real", "class", or "ignore", and a third which depends on the feature type.
+
+For "nominal" and "class" feature types, the third column shall consist of comma separated whitespace free class names.  For "real" feature types, the third column shall take the form "min,max", where min and max represent upper and lower bounds on the values found in the training data for the corresponding feature.  For "ignore" feature types, the third column shall be the literal string "ignore".  These features are ignored.
+
+There may only be one "class" feature, and if you wish to use the graph analysis tools, it must be the last entry in the metadata file.
+
+trainset
+
+The trainset contains the data on which FRaC will learn its models of normalcy.  Every instance of the training set must have the same class (and this class will be interpreted to be normal).
+
+A TSV file where rows represent distinct samples, and columns represent features.  The nth column corresponds to the nth entry in the metadata file, and must therefore agree in type: "real" values must be decimal numbers, "class" and "feature" values must be strings matching a value provided in the third column of the corresponding entry of the metadata file, and "ignore" values can be anything (as they will be ignored).  
+
+testset
+
+Identical to the trainset, except any value that is not a "class" value may be replaced by a "?" to signify that the value is unknown.  Additionally, there must be at least one normal and at least one abnormal sample in the testset.  The graph analysis module becomes more resistant to sampling bias as more of each of these are added (though a small number of either normal or abnormal can cause serious bias).
+
+
+If graph analysis is desired, all "nominal" and "real" feature names must consist of a number prefaced by a common string.  This string is used by the graph generator to identify each feature.  An example of each input file is presented below.
+
+metadata:
+
+FEATURE_1	nominal	a,b
+FEATURE_2	nominal	1,2,3
+irrelevant	ignore	ignore
+FEATURE_4	real	-8.4,12.3
+FEATURE_5	nominal	a,b,c
+sampleclass	class	norm,anom
+
+trainset:
+
+a	1	c	0	a	norm
+b	2	c	1	b	norm
+a	3	b	2	b	norm
+b	2	a	-1	c	norm
+
+testset:
+
+a	?	c	0	a	norm
+a	?	b	4	b	anom
+b	2	c	1	a	norm
+b	4	?	1	?	anom
+a	3	b	-1	b	norm
+b	2	a	-8	?	anom
+
+
+/////////////////////////////////////////////
+//Running the linkage disequilibrium tester//
+/////////////////////////////////////////////
+
+Run "python linkageTester.py -h" for instructions on input to the linkage tester.  Your graph is created by the runFrac.sh script, and will have the form (dataset)_graph_(options), and the chromosome lookup should be publically available from your snpchip manufacturer.
+
+////////////////
+//Dependencies//
+////////////////
+
+
+g++ compiler sufficiently modern to compile C++11 code.
+Linux operating system.
+Bash.
+Python 3+.
+
+
+///////////
+//Contact//
+///////////
+
+
+Contact Cyrus Cousins @ cyrus.cousins@tufts.edu with questions.
