@@ -7,4 +7,5 @@ using namespace std;
 
 struct GeneScorePair;
 
-void runCSAX(vector<Sample> traindata, vector<Sample> testdata, int numBags);
+void runCSAX(string traindata_file, string testdata_file,
+        string genesets_file, int num_bags, float gamma);
