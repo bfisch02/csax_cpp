@@ -58,6 +58,7 @@ vector<Sample> getData(string matrixFile)
     float tempFloat = 0.0;
     vector<vector<float>> buffer;
     //vector<vector<float>> inputBuffer;
+    cerr << "Middle of getData" << endl;
     if (matrix.is_open()) {
         getline(matrix, line);
         istringstream lineStream (line);

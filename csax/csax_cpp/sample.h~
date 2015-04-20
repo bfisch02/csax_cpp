@@ -5,7 +5,6 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
-#include <iostream>
 using namespace std;
 #include<vector>
 

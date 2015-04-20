@@ -3,6 +3,7 @@
 // Helper function declarations for the CSAX algorithm
 
 #include "sample.h"
+#include <iostream>
 using namespace std;
 
 struct GeneScorePair;
