@@ -10,7 +10,7 @@ using namespace std;
 Sample::Sample(int n) {
     genecount = n;
 
-    vector<float> newGeneset;
+    vector<double> newGeneset;
     for (int i = 0; i < genecount; i++) {
         newGeneset.push_back(0);
     }
@@ -18,16 +18,17 @@ Sample::Sample(int n) {
     c = -1;
 }
 
-Sample::Sample(int n, vector<float> newGenes) {
+Sample::Sample(int n, string newName, vector<double> newGenes) {
     genecount = n;
 
-    vector<float> newGeneset;
+    vector<double> newGeneset;
     for (int i = 0; i < genecount; i++) {
         newGeneset.push_back(0);
     }
     geneset = newGeneset;
     setGenes(newGenes);
     c = -1;
+    name = newName;
 }
 
 int Sample::getClass() {
@@ -37,12 +38,15 @@ int Sample::getClass() {
 void Sample::setClass(int newC) {
     c = newC;
 }
+string Sample::getName() {
+    return name;
+}
 
-void Sample::setGene(int index, float gene) {
+void Sample::setGene(int index, double gene) {
     geneset[index] = gene;
 }
 
-void Sample::setGenes(vector<float> newGenes) {
+void Sample::setGenes(vector<double> newGenes) {
     if ((signed)newGenes.size() != genecount) {
         cerr << "Sample class not given vector of correct length!" << endl;
     }
@@ -50,6 +54,11 @@ void Sample::setGenes(vector<float> newGenes) {
         geneset[i] = newGenes[i];
     }
 }
+
+double Sample::getGene(unsigned index) {
+    return geneset[index];
+}
+
 void Sample::print() {
     for (auto i = geneset.begin(); i != geneset.end(); i++) {
         cout << *i << endl;
