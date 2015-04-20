@@ -5,6 +5,7 @@
 #include "genesetmanager.h"
 #include <map>
 #include <iostream>
+#include <math.h>
 using namespace std;
 
 GeneSetManager::GeneSetManager() {
@@ -31,5 +32,16 @@ void GeneSetManager::sortByMedian()
 
 double GeneSetManager::getAnomalyScore(float gamma, map<string, float> *ES)
 {
-
+    sortByMedian();
+    double total_score = 0;
+    double cur_score = 0;
+    for (unsigned i = 0; i < genesets.size(); i++) {
+        if (ES->count(genesets[i]->name) == 0) {
+            continue;
+        } else {
+            cur_score = ES->at(genesets[i]->name);
+            total_score += cur_score * pow(gamma, i);
+        }
+    }
+    return total_score;
 }
