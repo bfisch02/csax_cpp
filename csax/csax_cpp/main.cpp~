@@ -7,7 +7,6 @@
 #include "sample.h"
 #include "csaxfuncs.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -22,11 +21,8 @@ csax.r -B 5 examples.input/example.training.set examples.input/example.test.set 
 echo -ne "\nRESULT: CSAX AUC=`auc.r examples.input/example.test.set.labels examples.output/csax.g`\n\n"
  *from the examples.bash file
  */
-struct data {
-    vector<Sample *> data;
-    vector<string> geneNames;
-};
-data getData(string matrixFile);
+
+vector<Sample> getData(string matrixFile);
 void printSamples(vector<Sample> samples);
 
 int main(int argc, char **argv) {
@@ -38,77 +34,20 @@ int main(int argc, char **argv) {
     }
 
     int num_bags = 40; // Default number of bags
-    double gamma = .95; // Default gamma value
-    (void)num_bags;
-    (void)gamma;
+    float gamma = .95; // Default gamma value
 
-    ofstream training;
-    training.open("trainingdata_buffer");
+    cout << argv[1] << endl;
+    vector<Sample> traindata = getData(argv[1]);
 
-    data traindata = getData(argv[1]);
-    double fractionBag = .5;
-    unsigned numTraining = traindata.data.size();
-    unsigned numTrue = fractionBag * numTraining;
-    vector<bool> truthVector;
-
-    //make a random permutation parallel array
-    for (unsigned i = 0; i < numTrue; i++) {
-        truthVector.push_back(true);
-    }
-    for (unsigned i = numTrue; i < numTraining; i++) {
-        truthVector.push_back(false);
-    }
-    std::random_shuffle (truthVector.begin(), truthVector.end());
-
-    //output training data to a file
-    for (unsigned i = 0; i < traindata.data.size(); i++) {
-        training << traindata.data[i]->getName() << "\t";
-    }
-    training << endl;
-
-    unsigned numGenes = traindata.geneNames.size();
-    for (unsigned j = 0; j < numGenes; j++) {
-        training << traindata.geneNames[j] << "\t";
-        for (unsigned i = 0; i < traindata.data.size(); i++) {
-            if (truthVector[i])
-                training << traindata.data[i]->getGene(j) << "\t";
-        }
-        training << endl;
-    }
-
-    training.close();
-
-    ofstream test;
-    test.open("testdata_buffer");
-
-    //output testdata to a file
-    data testdata = getData(argv[2]);
-    for (unsigned i = 0; i < testdata.data.size(); i++) {
-        test << testdata.data[i]->getName() << "\t";
-    }
-    test << endl;
-
-    numGenes = testdata.geneNames.size();
-    for (unsigned j = 0; j < numGenes; j++) {
-        test << testdata.geneNames[j] << "\t";
-        for (unsigned i = 0; i < testdata.data.size(); i++) {
-            test << traindata.data[i]->getGene(j) << "\t";
-        }
-        test << endl;
-    }
-
-    test.close();
-
-    //system("./bashtest.bash");
     // TODO: Add options parsing
 
     //runCSAX(argv[3], argv[4], argv[5], num_bags, gamma);
 }
 
-data getData(string matrixFile)
+vector<Sample> getData(string matrixFile)
 {
-    //cerr << "Beginning of getData" << endl;
-    vector<Sample*> inputBuffer;
+    cerr << "Beginning of getData" << endl;
+    vector<Sample> inputBuffer;
     ifstream matrix;
     matrix.open(matrixFile);
     string line = "";
@@ -116,10 +55,10 @@ data getData(string matrixFile)
     vector<string> nameSamples;
     vector<string> nameGenes;
     unsigned numNames = 0;
-    double tempdouble = 0.0;
-    vector<vector<double>> buffer;
-    //Sample newSample;
-    //vector<vector<double>> inputBuffer;
+    float tempFloat = 0.0;
+    vector<vector<float>> buffer;
+    //vector<vector<float>> inputBuffer;
+    cerr << "Middle of getData" << endl;
     if (matrix.is_open()) {
         getline(matrix, line);
         istringstream lineStream (line);
@@ -129,11 +68,11 @@ data getData(string matrixFile)
         }
         while (matrix >> name) {
             nameGenes.push_back(name);
-            vector<double> oneRow;
+            vector<float> oneRow;
 
             for (unsigned i = 0; i < numNames; i++) {
-                matrix >> tempdouble;
-                oneRow.push_back(tempdouble);
+                matrix >> tempFloat;
+                oneRow.push_back(tempFloat);
             }
             buffer.push_back(oneRow);
         }
@@ -141,28 +80,17 @@ data getData(string matrixFile)
         //using buffer, extract one sample at a time, put it into the return
         //vector
         for (unsigned j = 0; j < numNames; j++) {
-            vector<double> onesample;
+            vector<float> onesample;
             for (unsigned i = 0; i < buffer.size(); i++) {
                 onesample.push_back(buffer[i][j]);
             }
-            //Sample newSample(numGenes, onesample);
-            Sample *newSample = new Sample(numGenes, nameSamples[j], onesample);
+            Sample newSample(numGenes, onesample);
             inputBuffer.push_back(newSample);
         }
     }
-
-    //ifstream testoutput;
-    //testoutput.open("outputfilename");
-    //for (int i = 0; i < inputBuf
-    //matrix.close();
-    //for (unsigned i = 0; i < inputBuffer.size(); i++) {
-    //    cout << inputBuffer[i] << "\t";
-   // }
-    //cout << endl;
-
-    //code to reproduce input file
-    //for (in
-    return {inputBuffer, nameGenes};
+    matrix.close();
+    cerr << "End of getData" << endl;
+    return inputBuffer;
 }
 
 void printSamples(vector<Sample> samples)

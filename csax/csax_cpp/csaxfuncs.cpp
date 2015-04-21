@@ -3,74 +3,108 @@
 // Helper function implementations for CSAX algorithm
 
 #include "csaxfuncs.h"
+#include "genesetmanager.h"
 #include "sample.h"
+#include <vector>
+#include <map>
 #include <iostream>
 using namespace std;
 
-struct GeneScorePair {
+struct GeneScoreList {
     string gene;
-    float score;
+    vector<float> scores;
 };
 
-// DECLARATIONS
+// Declarations
 
-vector<GeneScorePair> runFRaC(vector<Sample> traindata,
-        vector<Sample> testdata);
-vector<float> runGSEA(vector<Sample> traindata, vector<GeneScorePair> gscores);
-void CSAX_iteration(vector<Sample> traindata, vector<Sample> testdata);
+vector<GeneScoreList *> runFRaC(vector<Sample *> traindata,
+        vector<Sample *> testdata, vector<string> genenames, bool use_all);
+vector<map<string, float>*> runGSEA(string genesets_file,
+        vector<GeneScoreList *> genescores);
+void CSAX_iteration(vector<Sample*> traindata, vector<Sample*> testdata,
+        string genesets_file, vector<string> genenames,
+        vector<GeneSetManager*> managers);
 
-// DEFINITIONS
+// Definitions
 
-void runCSAX(vector<Sample> traindata, vector<Sample> testdata, int numBags)
+void runCSAX(vector<Sample *> traindata, vector<Sample *> testdata,
+        string genesets_file, vector<string> genenames, int num_bags,
+        float gamma)
 {
-    // First, process full training data
-    vector<GeneScorePair> genescores = runFRaC(traindata, testdata);
+    // First, we have to process the full training data
+    vector<GeneScoreList *> genescores =
+        runFRaC(traindata, testdata, genenames, true);
 
     // Run GSEA as well
-    vector<float> enrichmentscores = runGSEA(traindata, genescores);
+    vector<map<string, float>*> ES = runGSEA(genesets_file, genescores);
 
-    // Run bagging iterations
-    for (int b = 0; bag < numBags; b++) {
-        CSAX_iteration(traindata, testdata);
+    vector<GeneSetManager*> managers;
+    for (unsigned i = 0; i < testdata.size(); i++) {
+        managers.push_back(new GeneSetManager());
     }
 
-    // TODO: Sort samples by median score:x
+    for (int b = 0; b < num_bags; b++) {
+        CSAX_iteration(traindata, testdata, genesets_file, genenames, managers);
+    }
+
+    for (unsigned i = 0; i < managers.size(); i++) {
+        managers[i]->sortByMedian();
+    }
+
+    float cur_score = 0;
+    for (unsigned i = 0;i  < testdata.size(); i++) {
+        cur_score = managers[i]->getAnomalyScore(gamma, ES[i]);
+        cout << "Score for " << i << ": " << cur_score << endl;
+    }
+
 }
 
 // Run FRaC and GSEA on random subset of traindata, and add ranking to each
 // Sample in the traindata
-void CSAX_iteration(vector<Sample> traindata, vector<Sample> testdata)
+void CSAX_iteration(vector<Sample*> traindata, vector<Sample*> testdata,
+        string genesets_file, vector<string> genenames,
+        vector<GeneSetManager*> managers)
 {
-    // The indices of our random Samples for this iteration
-    // TODO: Actually get these
-    vector<int> selected_indices;
+    // TODO: Somehow, specify random traindata instances to use
 
-    // Subset of trainda
-    // TODO: Get random subset
-    vector<Sample> traindata_subset;
+    // Run FRaC on sample of traindata
+    vector<GeneScoreList *> genescores = 
+        runFRaC(traindata, testdata, genenames, false);
 
-    // Run FRaC and GSEA
-    vector<GeneScorePair> genescores = runFRaC(traindata_subset, testdata);
-    vector<float> enrichmentscores = runGSEA(traindata_subset, genescores);
+    // Run GSEA on output
+    vector<map<string, float> *> enrichmentscores =
+        runGSEA(genesets_file, genescores);
 
-    //TODO: For each Sample in traindata_subset, add ranking to list
+    // For each test sample
+    for (unsigned i = 0; i < testdata.size(); i++) {
+        for (std::map<string, float>::iterator it=enrichmentscores[i]->begin();
+                it != enrichmentscores[i]->end(); it++) {
+            managers[i]->addRankingToGeneset(it->second, it->first);
+        }
+    }
 }
 
-vector<GeneScorePair> runFRaC(vector<Sample> traindata,
-        vector<Sample> testdata)
+vector<GeneScoreList *> runFRaC(vector<Sample *> traindata,
+        vector<Sample *> testdata, vector<string> genenames, bool use_all)
 {
+    (void)traindata;
+    (void)testdata;
+    (void)genenames;
+    (void)use_all;
     // TODO: Call FRaC program, which takes in traindata and testdata
-    // and returns a table of anomaly scores for genes and for each
-    // test instance. For this program, we are only interested in the
-    // anomaly scores for the genes.
-    vector<GeneScorePair> genescores;
+    // and returns a table of anomaly scores, where the rows represent
+    // genes and the columns represent test instances.
+    vector<GeneScoreList *> genescores;
     return genescores;
 }
 
-vector<float> runGSEA(vector<Sample> traindata, vector<GeneScorePair> gscores)
+vector<map<string, float>*> runGSEA(string genesets_file,
+        vector<GeneScoreList *> genescores)
 {
-    //TODO: Call GSEA program, which takes in traindata and genescores and
-    // returns a list of genes, ranked by their "enrichment"
-    vector<float> enrichment_scores;
+    (void)genesets_file;
+    (void)genescores;
+    //TODO: Call GSEA program, which takes in a gene set database and genescores
+    // and returns a list of genes, ranked by their "enrichment"
+    vector<map<string, float>*> enrichment_scores;
     return enrichment_scores;
 }

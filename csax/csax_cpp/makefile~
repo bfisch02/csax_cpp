@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-c -Wall -Wextra -std=c++11
 LDFLAGS=
-SOURCES=main.cpp sample.cpp csaxfuncs.cpp genesetmanager.cpp
+SOURCES=main.cpp sample.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=CSAX
 

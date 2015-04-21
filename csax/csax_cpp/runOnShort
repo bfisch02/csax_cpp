@@ -1,1 +1,1 @@
-./CSAX -B 5 short.example notImplemented notImplemented notImplemented notImplemented
+./CSAX examples.input/example.training.set examples.input/example.test.set examples.input/reactome.gmt output_files

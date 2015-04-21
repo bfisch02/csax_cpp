@@ -3,9 +3,12 @@
 // Helper function declarations for the CSAX algorithm
 
 #include "sample.h"
+#include <vector>
+#include <iostream>
 using namespace std;
 
 struct GeneScorePair;
-struct SampleScorePair
 
-void runCSAX(vector<Sample> traindata, vector<Sample> testdata, int numBags);
+void runCSAX(vector<Sample *> traindata, vector<Sample *> testdata,
+        string genesets_file, vector<string> genenames, int num_bags,
+        float gamma)

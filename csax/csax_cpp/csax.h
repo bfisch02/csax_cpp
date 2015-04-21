@@ -12,11 +12,6 @@ using namespace std;
 #define classifier_H
 //comments for each function found in the .cpp implementation
 
-struct GeneScorePair {
-    string gene;
-    float score;
-};
-
 class CSAX
 {
         public:
