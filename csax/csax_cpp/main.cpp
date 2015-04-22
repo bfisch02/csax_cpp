@@ -1,8 +1,6 @@
-// Brett Fischler
+// Brett Fischler and Jacob Gerace
 // April 2015
 // Sample Class Implementation
-//
-// Modifications made by Jacob Gerace
 
 #include "sample.h"
 #include "csaxfuncs.h"
@@ -36,58 +34,15 @@ int main(int argc, char **argv) {
              << endl;
         exit(1);
     }
-    cout << "argv3 is " << argv[3];
-    cerr << endl;
-    ifstream src (argv[3], std::ios::binary);
-    ofstream dst("canwereadthis", std::ios::binary);
-    dst << src.rdbuf();
-    ifstream newf;
-    newf.open("canwereadthis");
-    for (int i = 0; i < 5; i++) {
-        string name;
-        newf >> name;
-        cerr << "CAN WE GET NAME OF: " << name << endl;
-    }
-
-    /*ifstream newf;
-    newf.open(argv[3]);
-    for (int i = 0; i < 50; i++) {
-        string name;
-        newf >> name;
-        cerr <<  "CAN WE GET NAME OF: " << name << endl;
-    }
-    */
-    exit(0);
 
     int num_bags = 40; // Default number of bags
     double gamma = .95; // Default gamma value
     (void)num_bags;
     (void)gamma;
 
-
     SampleList traindata = getData(argv[1]);
     SampleList testdata = getData(argv[2]);
     runCSAX(traindata, testdata, argv[2], argv[3], num_bags, .94);
-
-    /*ofstream test;
-    test.open("testdata_buffer");
-
-    //output testdata to a file
-    for (unsigned i = 0; i < testdata.data.size(); i++) {
-        test << testdata.data[i]->getName() << "\t";
-    }
-    test << endl;
-
-    unsigned numGenes = testdata.geneNames.size();
-    for (unsigned j = 0; j < numGenes; j++) {
-        test << testdata.geneNames[j] << "\t";
-        for (unsigned i = 0; i < testdata.data.size(); i++) {
-            test << traindata.data[i]->getGene(j) << "\t";
-        }
-        test << endl;
-    }
-
-    test.close();*/
 
     //system("./bashtest.bash");
     // TODO: Add options parsing

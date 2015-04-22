@@ -44,6 +44,10 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
     vector<GeneScoreList *> genescores =
         runFRaC(traindata, testfile, true);
 
+    cerr << "Note to brett, I put an exit here right before the first runGSEA call remove it"
+         <<  " to test GSEA, line 48 in csaxfuncs.cpp" << endl;
+    exit(0);
+
     // Run GSEA as well
     vector<map<string, double>*> ES = runGSEA(genesets_file, genescores);
 
@@ -57,7 +61,6 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
     }
 
     cout << "STILL GOOD" << endl;
-    exit(1);
 
     for (unsigned i = 0; i < managers.size(); i++) {
         managers[i]->sortByMedian();
@@ -81,7 +84,7 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
     vector<GeneScoreList *> genescores =
         runFRaC(traindata, testfile, false);
 
-    //UP TO THIS POINT WOOHOO
+    //GOOD UP TO THIS POINT
 
     // Run GSEA on output
     vector<map<string, double> *> enrichmentscores =
@@ -99,7 +102,6 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
 vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
         bool use_all)
 {
-    /*
     (void)testfile;
     string trainfile = "trainfile";
     if (use_all) {
@@ -107,36 +109,23 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
     } else {
         samplesToFile(traindata, trainfile, .5);
     }
-    cerr << "the testfile is: " << testfile << endl;
-    */
     // TODO: Call FRaC program, which takes in traindata and testdata
     // and returns a table of anomaly scores, where the rows represent
     // genes and the columns represent test instances.
 
 
     //string command = "../csax_r/frac.r " + trainfile + " ../csax_r/examples.input/example.test.set FRaC_gene_anomaly_buffer";
-    //string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
-    //system(command.c_str());
-
-
-    cerr << "here" << endl;
+    string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
+    system(command.c_str());
     string fracFileP = "output_location/ns.gz";
-    ifstream matrix;
-    matrix.open("output_location/ns.gz");
-    double name;
-    matrix >> name;
-    cerr << "First name is: " << name;
-    matrix >> name;
-    cerr << "First name is: " << name;
 
+    system("gzip -d output_location/ns.gz");
+    string decompfracFileP = "output_location/ns";
 
-    //remove(fracFileP.c_str());
-    cerr << "here2" << endl;
-
-    exit(0);
-    vector<GeneScoreList *> genescores = parseFRaCOutput(fracFileP);
-    //for right now, printing out the file we got back
-    /*
+    vector<GeneScoreList *> genescores = parseFRaCOutput(decompfracFileP);
+    remove(fracFileP.c_str());
+    remove(decompfracFileP.c_str());
+    /* //For debugging: prints out the generated genescores
     for (unsigned i = 0; i < genescores.size(); i++) {
         cout << genescores[i]->gene;
         unsigned numQuery = genescores[i]->scores.size();
@@ -145,8 +134,6 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
         }
         cout << endl;
     }
-    cerr << "here3" << endl;
-    exit(0);
     */
     return genescores;
 }
@@ -158,7 +145,6 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
 //};
 vector<GeneScoreList *> parseFRaCOutput(string fracFileP)
 {
-    cerr << "go west" << endl;
     vector<GeneScoreList *> inputBuffer;
     ifstream matrix;
     matrix.open(fracFileP);
@@ -169,37 +155,26 @@ vector<GeneScoreList *> parseFRaCOutput(string fracFileP)
     double tempdouble = 0.0;
     unsigned numNames = 0;
     GeneScoreList * p;
-    cerr << "life is peaceful there" << endl;
     if (matrix.is_open()) {
-        //Don't need the header, just call getline to chuck it
-        cerr << "go west2" << endl;
+        //Don't need the header, just call getline to remove it
         getline(matrix, line);
         istringstream lineStream (line);
         while (lineStream >> name) {
-            cerr << name;
             numNames++;
          }
-        cerr << "in the openair" << endl;
         while (matrix >> name) {
             //nameGenes.push_back(name);
-            cerr << "where the skies are blue" << endl;
             vector<double> oneRow;
             for (unsigned i = 0; i < numNames; i++) {
-                cerr << "this is what we'll do" << endl;
                 matrix >> tempdouble;
                 oneRow.push_back(tempdouble);
-                cerr << tempdouble << endl;
             }
-            cerr << "sun in wintertime" << endl;
             p = new GeneScoreList;
             p->gene = name;
             p->scores = oneRow;
-            cerr << "we will be just fine" << endl;
-
             inputBuffer.push_back(p);
         }
     }
-    cerr << "go west" << endl;
     return inputBuffer;
 }
 
