@@ -30,7 +30,7 @@ void GeneSetManager::sortByMedian()
     // Sort genesets vector by median
 }
 
-double GeneSetManager::getAnomalyScore(float gamma, map<string, float> *ES)
+double GeneSetManager::getAnomalyScore(double gamma, map<string, double> *ES)
 {
     sortByMedian();
     double total_score = 0;

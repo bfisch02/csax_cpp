@@ -1,0 +1,39 @@
+
+This is a specialized version of FRaC[1,2]:
+
+The feature models are SVMs 
+
+Only real-valued features are considered (i.e. the models use SVR).
+
+	Notes: To include nominal values in this version, one would have to write
+	additional code to (i) identify the nominal features either automatically
+	or via additional input, (ii) adjust the learning algorithm (iii) implement
+	a separate error model (e.g. a confusion matrix).
+
+The error model is a Gaussian (as opposed to the smoothed histogram used in [1,2]).
+
+	We find this model is simpler, and at least as accurate as [1,2],
+	especially with limited training instances.
+
+This version does not handle *missing* values.
+
+	This is for simplicity of implementation only.  The FRaC algorithm handles
+	missing values specially, but this code will assume that all values are
+	present.
+
+This code is based on LIBSVM[3] version 3.1 (April 1st 2011).  The purpose is a
+faster version of FRaC that uses less temporary file storage.
+
+[1, FRaC in ICDM 2010]:  
+K. Noto, C. E. Brodley, and D. Slonim. 
+Anomaly Detection Using an Ensemble of Feature Models. 
+Proceedings of the 10th IEEE International Conference on Data Mining (ICDM 2010), 
+Sydney, Australia, December 14-17, 2010, acceptance rate 19%. 
+IEEE Computer Society Press. 
+
+[2, FRaC journal version (under review)]:
+K. Noto, C. E. Brodley, and D. Slonim. 
+FRaC: A Feature-Modeling Approach for Semi-Supervised and Unsupervised Anomaly Detection. 
+
+[3, LIBSVM]:
+http://www.csie.ntu.edu.tw/~cjlin/libsvm/
