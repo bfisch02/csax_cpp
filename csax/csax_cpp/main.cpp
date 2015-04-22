@@ -36,13 +36,27 @@ int main(int argc, char **argv) {
              << endl;
         exit(1);
     }
-    ifstream matrix;
-    matrix.open(argv[3]);
-    while (true) {
+    cout << "argv3 is " << argv[3];
+    cerr << endl;
+    ifstream src (argv[3], std::ios::binary);
+    ofstream dst("canwereadthis", std::ios::binary);
+    dst << src.rdbuf();
+    ifstream newf;
+    newf.open("canwereadthis");
+    for (int i = 0; i < 5; i++) {
         string name;
-        matrix >> name;
+        newf >> name;
+        cerr << "CAN WE GET NAME OF: " << name << endl;
+    }
+
+    /*ifstream newf;
+    newf.open(argv[3]);
+    for (int i = 0; i < 50; i++) {
+        string name;
+        newf >> name;
         cerr <<  "CAN WE GET NAME OF: " << name << endl;
     }
+    */
     exit(0);
 
     int num_bags = 40; // Default number of bags
