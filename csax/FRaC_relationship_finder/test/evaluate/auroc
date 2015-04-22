@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+#
+
+# The AUC is the likelihood of a randomly selected positive being ranked higher
+# than a randomly selected negative.  This program calculates the AUC by
+# calculating this likelihood exactly for a given sample.
+
+# Copyright © 2011 Keith Noto.  Disributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html).
+
+__author__ = "Keith Noto <noto@cs.tufts.edu>"
+__license__ = "GPL"
+__copyright__ = "Copyright © 2011 Keith Noto"
+VERSION = __revision__ = "1.0"
+
+import sys,string,optparse,os,os.path,copy,fpformat,time,signal,random,math,re
+
+def main():
+
+	import sys,string,optparse,os.path,signal
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL) # properly handle SIGPIPE when piping output 
+
+	PROGRAM = os.path.basename(sys.argv[0])
+	USAGE = "[options] < input"
+	VERSION = "1.0"
+	SYNOPSIS = "Compute the area under the ROC curve (AUC).  Input are two columns, Y and X.  Y are true class labels in {0,1}.  X are real-valued ranking scores to be thresholded.  '#' is considered a single-line comment character.  If there are more than two columns of input the last two are used.  Distributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html)."
+
+	parser = optparse.OptionParser(usage="%s %s"%(PROGRAM,USAGE), version="%s version %s"%(PROGRAM,VERSION), description=SYNOPSIS)
+	parser.add_option("-t", dest="delim", type="string", metavar="String",  default=None, action="store", help="Field Separator")
+	(options, args) = parser.parse_args()
+
+	# is x to be considered positive for binary functions?
+	def positive(x):
+		try:
+			return float(x) > 0
+		except ValueError:
+			return x.strip()[0] in "pP+" 
+
+	# Read last two columns (y, x) before any comment characters
+	data = map(lambda (y,x) : (positive(y),float(x)), map(lambda line : tuple(line.split('#')[0].split(options.delim)[-2:]), open(args[0],'r') if args and args[0]!='-' else sys.stdin))
+
+	# Count classes
+	P = len(filter(lambda (y,x) : y, data)) # num. positives
+	N = len(data) - P # num negatives
+
+	# Group by x values
+	M = {}
+	for (y,x) in data:
+		M[x] = M.get(x, []) + [ y ]
+
+	T = 0 # number of NEGATIVES with x less than x of current POSITIVE
+	NBP = 0 # total number of *N*egatives *B*elow *P*ositives
+	for (x,Y) in sorted(M.iteritems()):  # for x values ascending order
+		p = len(filter(lambda y : y, Y)) # how many POSITIVES with this x value?
+		n = len(Y) - p                   # how many NEGATIVES with this x value?
+		NBP += p * (T + (n / 2.0))
+		T += n 
+
+	if not N or not P:
+		sys.stderr.write("undefined AUC\n") 
+	else:
+		sys.stdout.write("%.12g\n" % ( float(NBP) / (float(N)*float(P)) )) 
+
+	return
+
+if __name__=='__main__':
+	try:
+		main()
+	except KeyboardInterrupt:
+		pass
+	except Exception,ex:
+		sys.stderr.write("%s: %s\n" % (sys.argv[0], str(ex)))

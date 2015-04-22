@@ -1,0 +1,110 @@
+Regressors (feature, index):
+Classifiers (feature, index):
+(0, 0): 
+{Waffles Decision Tree Classifier {feature: 0} { [||
+Attr 0?
+   |
+   +a->a
+   |
+   +b->b
+|] } }
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)
+(0, 1): 
+{Waffles Classifier: {feature: 0, classifier type: 2 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	0.585	-0.415
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.333	0.667
+
+(Entropy = 1)
+(0, 2): 
+{Waffles Classifier: {feature: 0, classifier type: 3 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)
+(0, 3): 
+{Waffles Classifier: {feature: 0, classifier type: Naive Bayes Classifier}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)
+(1, 0): 
+{Waffles Decision Tree Classifier {feature: 1} { [||
+Attr 0?
+   |
+   +a->a
+   |
+   +b->b
+|] } }
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)
+(1, 1): 
+{Waffles Classifier: {feature: 1, classifier type: 2 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	0.585	-0.415
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.333	0.667
+
+(Entropy = 1)
+(1, 2): 
+{Waffles Classifier: {feature: 1, classifier type: 3 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)
+(1, 3): 
+{Waffles Classifier: {feature: 1, classifier type: Naive Bayes Classifier}}
+NS Matrix:
+	0	1
+0	-0.737	1.58
+1	1.58	-0.737
+Confusion Matrix:
+	0	1
+0	0.833	0.167
+1	0.167	0.833
+
+(Entropy = 1)

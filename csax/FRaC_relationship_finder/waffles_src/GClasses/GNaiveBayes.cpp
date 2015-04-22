@@ -1,0 +1,459 @@
+/*
+  The contents of this file are dedicated by all of its authors, including
+
+    Michael S. Gashler,
+    Eric Moyer,
+    anonymous contributors,
+
+  to the public domain (http://creativecommons.org/publicdomain/zero/1.0/).
+
+  Note that some moral obligations still exist in the absence of legal ones.
+  For example, it would still be dishonest to deliberately misrepresent the
+  origin of a work. Although we impose no legal requirements to obtain a
+  license, it is beseeming for those who build on the works of others to
+  give back useful improvements, or find a way to pay it forward. If
+  you would like to cite us, a published paper about Waffles can be found
+  at http://jmlr.org/papers/volume12/gashler11a/gashler11a.pdf. If you find
+  our code to be useful, the Waffles team would love to hear how you use it.
+*/
+
+#include "GNaiveBayes.h"
+#include "GError.h"
+#include <math.h>
+#include <stdlib.h>
+#include "GVec.h"
+#include "GDom.h"
+#include "GDistribution.h"
+#include "GRand.h"
+#include "GTransform.h"
+#include "GSparseMatrix.h"
+#include "GHolders.h"
+#include <cmath>
+
+namespace GClasses {
+
+struct GNaiveBayesInputAttr
+{
+	size_t m_nValues;
+	size_t* m_pValueCounts;
+
+	GNaiveBayesInputAttr(size_t nValues)
+	{
+		m_nValues = nValues;
+		m_pValueCounts = new size_t[m_nValues];
+		memset(m_pValueCounts, '\0', sizeof(size_t) * m_nValues);
+	}
+
+	GNaiveBayesInputAttr(GDomNode* pNode)
+	{
+		GDomListIterator it(pNode);
+		m_nValues = it.remaining();
+		m_pValueCounts = new size_t[m_nValues];
+		for(size_t i = 0; i < m_nValues; i++)
+		{
+			m_pValueCounts[i] = (size_t)it.current()->asInt();
+			it.advance();
+		}
+	}
+
+	~GNaiveBayesInputAttr()
+	{
+		delete[] m_pValueCounts;
+	}
+
+	GDomNode* serialize(GDom* pDoc)
+	{
+		GDomNode* pNode = pDoc->newList();
+		for(size_t i = 0; i < m_nValues; i++)
+			pNode->addItem(pDoc, pDoc->newInt(m_pValueCounts[i]));
+		return pNode;
+	}
+
+	void AddTrainingSample(const int inputValue)
+	{
+		if(inputValue >= 0 && (size_t)inputValue < m_nValues)
+			m_pValueCounts[inputValue]++;
+		else
+			GAssert(inputValue == UNKNOWN_DISCRETE_VALUE);
+	}
+
+	size_t eval(const int inputValue)
+	{
+		if(inputValue >= 0 && (size_t)inputValue < m_nValues)
+			return m_pValueCounts[inputValue];
+		else
+			return 0;
+	}
+};
+
+// --------------------------------------------------------------------
+
+struct GNaiveBayesOutputValue
+{
+	size_t m_nCount;
+	size_t m_featureDims;
+	struct GNaiveBayesInputAttr** m_pInputs;
+
+	GNaiveBayesOutputValue(GRelation* pFeatureRel, size_t nInputCount)
+	{
+		m_nCount = 0;
+		m_featureDims = nInputCount;
+		m_pInputs = new struct GNaiveBayesInputAttr*[nInputCount];
+		for(size_t n = 0; n < m_featureDims; n++)
+			m_pInputs[n] = new struct GNaiveBayesInputAttr(pFeatureRel->valueCount(n));
+	}
+
+	GNaiveBayesOutputValue(GDomNode* pNode, size_t nInputCount)
+	{
+		GDomListIterator it(pNode);
+		if(it.remaining() != nInputCount + 1)
+			throw Ex("Unexpected number of inputs");
+		m_nCount = (size_t)it.current()->asInt();
+		it.advance();
+		m_featureDims = nInputCount;
+		m_pInputs = new struct GNaiveBayesInputAttr*[m_featureDims];
+		for(size_t n = 0; n < m_featureDims; n++)
+		{
+			m_pInputs[n] = new struct GNaiveBayesInputAttr(it.current());
+			it.advance();
+		}
+	}
+
+	~GNaiveBayesOutputValue()
+	{
+		for(size_t n = 0; n < m_featureDims; n++)
+			delete(m_pInputs[n]);
+		delete[] m_pInputs;
+	}
+
+	GDomNode* serialize(GDom* pDoc)
+	{
+		GDomNode* pNode = pDoc->newList();
+		pNode->addItem(pDoc, pDoc->newInt(m_nCount));
+		for(size_t i = 0; i < m_featureDims; i++)
+			pNode->addItem(pDoc, m_pInputs[i]->serialize(pDoc));
+		return pNode;
+	}
+
+	void AddTrainingSample(const double* pIn)
+	{
+		for(size_t n = 0; n < m_featureDims; n++)
+			m_pInputs[n]->AddTrainingSample((int)pIn[n]);
+		m_nCount++;
+	}
+
+	double eval(const double* pInputVector, double equivalentSampleSize)
+	{
+		// The prior output probability
+		double dLogProb = log((double)m_nCount);
+
+		// The probability of inputs given this output
+		for(size_t n = 0; n < m_featureDims; n++)
+		{
+			dLogProb += log(std::max(1e-300,
+					(
+						(double)m_pInputs[n]->eval((int)pInputVector[n]) +
+						(equivalentSampleSize / m_pInputs[n]->m_nValues)
+					) /
+					(equivalentSampleSize + m_nCount)
+				));
+		}
+		return dLogProb;
+	}
+};
+
+// --------------------------------------------------------------------
+
+struct GNaiveBayesOutputAttr
+{
+	size_t m_nValueCount;
+	struct GNaiveBayesOutputValue** m_pValues;
+
+	GNaiveBayesOutputAttr(GRelation* pFeatureRel, size_t nInputCount, size_t nValueCount)
+	{
+		m_nValueCount = nValueCount;
+		m_pValues = new struct GNaiveBayesOutputValue*[m_nValueCount];
+		for(size_t n = 0; n < m_nValueCount; n++)
+			m_pValues[n] = new struct GNaiveBayesOutputValue(pFeatureRel, nInputCount);
+	}
+
+	GNaiveBayesOutputAttr(GDomNode* pNode, size_t nInputCount, size_t nValueCount)
+	{
+		GDomListIterator it(pNode);
+		if(it.remaining() != nValueCount)
+			throw Ex("Unexpected number of values");
+		m_nValueCount = nValueCount;
+		m_pValues = new struct GNaiveBayesOutputValue*[m_nValueCount];
+		for(size_t n = 0; n < m_nValueCount; n++)
+		{
+			m_pValues[n] = new struct GNaiveBayesOutputValue(it.current(), nInputCount);
+			it.advance();
+		}
+	}
+
+	~GNaiveBayesOutputAttr()
+	{
+		for(size_t n = 0; n < m_nValueCount; n++)
+			delete(m_pValues[n]);
+		delete[] m_pValues;
+	}
+
+	GDomNode* serialize(GDom* pDoc)
+	{
+		GDomNode* pNode = pDoc->newList();
+		for(size_t i = 0; i < m_nValueCount; i++)
+			pNode->addItem(pDoc, m_pValues[i]->serialize(pDoc));
+		return pNode;
+	}
+
+	void AddTrainingSample(const double* pIn, int out)
+	{
+		if(out >= 0 && (size_t)out < m_nValueCount)
+			m_pValues[out]->AddTrainingSample(pIn);
+	}
+
+	void eval(const double* pIn, GPrediction* pOut, double equivalentSampleSize)
+	{
+		GCategoricalDistribution* pDist = pOut->makeCategorical();
+		double* pValues = pDist->values(m_nValueCount);
+		for(size_t n = 0; n < m_nValueCount; n++)
+			pValues[n] = m_pValues[n]->eval(pIn, equivalentSampleSize);
+		pDist->normalizeFromLogSpace();
+	}
+
+	double predict(const double* pIn, double equivalentSampleSize, GRand* pRand)
+	{
+		GTEMPBUF(double, pValues, m_nValueCount);
+		for(size_t n = 0; n < m_nValueCount; n++)
+			pValues[n] = m_pValues[n]->eval(pIn, equivalentSampleSize);
+		return (double)GVec::indexOfMax(pValues, m_nValueCount, pRand);
+	}
+};
+
+// --------------------------------------------------------------------
+
+GNaiveBayes::GNaiveBayes()
+: GIncrementalLearner()
+{
+	m_pOutputs = NULL;
+	m_equivalentSampleSize = 0.5;
+	m_nSampleCount = 0;
+}
+
+GNaiveBayes::GNaiveBayes(GDomNode* pNode, GLearnerLoader& ll)
+: GIncrementalLearner(pNode, ll)
+{
+	m_nSampleCount = (size_t)pNode->field("sampleCount")->asInt();
+	m_equivalentSampleSize = pNode->field("ess")->asDouble();
+	GDomNode* pOutputs = pNode->field("outputs");
+	GDomListIterator it(pOutputs);
+	if(it.remaining() != m_pRelLabels->size())
+		throw Ex("Wrong number of outputs");
+	m_pOutputs = new struct GNaiveBayesOutputAttr*[m_pRelLabels->size()];
+	for(size_t i = 0; i < m_pRelLabels->size(); i++)
+	{
+		m_pOutputs[i] = new struct GNaiveBayesOutputAttr(it.current(), m_pRelFeatures->size(), m_pRelLabels->valueCount(i));
+		it.advance();
+	}
+}
+
+GNaiveBayes::~GNaiveBayes()
+{
+	clear();
+}
+
+// virtual
+GDomNode* GNaiveBayes::serialize(GDom* pDoc) const
+{
+	GDomNode* pNode = baseDomNode(pDoc, "GNaiveBayes");
+	pNode->addField(pDoc, "sampleCount", pDoc->newInt(m_nSampleCount));
+	pNode->addField(pDoc, "ess", pDoc->newDouble(m_equivalentSampleSize));
+	GDomNode* pOutputs = pNode->addField(pDoc, "outputs", pDoc->newList());
+	for(size_t i = 0; i < m_pRelLabels->size(); i++)
+		pOutputs->addItem(pDoc, m_pOutputs[i]->serialize(pDoc));
+	return pNode;
+}
+
+// virtual
+void GNaiveBayes::clear()
+{
+	m_nSampleCount = 0;
+	if(m_pOutputs)
+	{
+		for(size_t n = 0; n < m_pRelLabels->size(); n++)
+			delete(m_pOutputs[n]);
+		delete[] m_pOutputs;
+	}
+	m_pOutputs = NULL;
+}
+
+// virtual
+void GNaiveBayes::beginIncrementalLearningInner(const GRelation& featureRel, const GRelation& labelRel)
+{
+	clear();
+	m_pOutputs = new struct GNaiveBayesOutputAttr*[m_pRelLabels->size()];
+	for(size_t n = 0; n < m_pRelLabels->size(); n++)
+		m_pOutputs[n] = new struct GNaiveBayesOutputAttr(m_pRelFeatures, m_pRelFeatures->size(), m_pRelLabels->valueCount(n));
+}
+
+// virtual
+void GNaiveBayes::trainIncremental(const double* pIn, const double* pOut)
+{
+	for(size_t n = 0; n < m_pRelLabels->size(); n++)
+		m_pOutputs[n]->AddTrainingSample(pIn, (int)pOut[n]);
+	m_nSampleCount++;
+}
+
+// virtual
+void GNaiveBayes::trainInner(const GMatrix& features, const GMatrix& labels)
+{
+	if(!features.relation().areNominal())
+		throw Ex("GNaiveBayes only supports nominal features. Perhaps you should wrap it in a GAutoFilter.");
+	if(!labels.relation().areNominal())
+		throw Ex("GNaiveBayes only supports nominal labels. Perhaps you should wrap it in a GAutoFilter.");
+	beginIncrementalLearningInner(features.relation(), labels.relation());
+	for(size_t n = 0; n < features.rows(); n++)
+		trainIncremental(features[n], labels[n]);
+}
+
+// virtual
+void GNaiveBayes::trainSparse(GSparseMatrix& features, GMatrix& labels)
+{
+	if(features.rows() != labels.rows())
+		throw Ex("Expected the features and labels to have the same number of rows");
+	size_t featureDims = features.cols();
+	GUniformRelation featureRel(featureDims, 2);
+	beginIncrementalLearning(featureRel, labels.relation());
+	double* pFullRow = new double[featureDims];
+	ArrayHolder<double> hFullRow(pFullRow);
+	for(size_t n = 0; n < features.rows(); n++)
+	{
+		features.fullRow(pFullRow, n);
+		double* pEl = pFullRow;
+		for(size_t i = 0; i < featureDims; i++)
+		{
+			if(*pEl < 1e-6)
+				*pEl = 0.0;
+			else
+				*pEl = 1.0;
+			pEl++;
+		}
+		trainIncremental(pFullRow, labels[n]);
+	}
+}
+
+void GNaiveBayes::predictDistribution(const double* pIn, GPrediction* pOut)
+{
+	if(m_nSampleCount <= 0)
+		throw Ex("You must call train before you call eval");
+	for(size_t n = 0; n < m_pRelLabels->size(); n++)
+		m_pOutputs[n]->eval(pIn, &pOut[n], m_equivalentSampleSize);
+}
+
+void GNaiveBayes::predict(const double* pIn, double* pOut)
+{
+	if(m_nSampleCount <= 0)
+		throw Ex("You must call train before you call eval");
+	for(size_t n = 0; n < m_pRelLabels->size(); n++)
+		pOut[n] = m_pOutputs[n]->predict(pIn, m_equivalentSampleSize, &m_rand);
+}
+
+void GNaiveBayes::autoTune(GMatrix& features, GMatrix& labels)
+{
+	// Find the best ess value
+	double bestEss = 0.0;
+	double bestErr = 1e308;
+	for(double i = 0.0; i < 8; i += 0.25)
+	{
+		m_equivalentSampleSize = i;
+		double d = crossValidate(features, labels, 2);
+		if(d < bestErr)
+		{
+			bestErr = d;
+			bestEss = i;
+		}
+		else if(i >= 2.0)
+			break;
+	}
+
+	// Set the best values
+	m_equivalentSampleSize = bestEss;
+}
+
+#ifndef NO_TEST_CODE
+void GNaiveBayes_CheckResults(double yprior, double ycond, double nprior, double ncond, GPrediction* out)
+{
+	double py = yprior * ycond;
+	double pn = nprior * ncond;
+	double sum = py + pn;
+	py /= sum;
+	pn /= sum;
+	GCategoricalDistribution* pCat = out->asCategorical();
+	double* pVals = pCat->values(2);
+	if(std::abs(pVals[0] - py) > 1e-8)
+		throw Ex("wrong");
+	if(std::abs(pVals[1] - pn) > 1e-8)
+		throw Ex("wrong");
+}
+
+void GNaiveBayes_testMath()
+{
+	const char* trainFile =
+	"@RELATION test\n"
+	"@ATTRIBUTE a {t,f}\n"
+	"@ATTRIBUTE b {r,g,b}\n"
+	"@ATTRIBUTE c {y,n}\n"
+	"@DATA\n"
+	"t,r,y\n"
+	"f,r,n\n"
+	"t,g,y\n"
+	"f,g,y\n"
+	"f,g,n\n"
+	"t,r,n\n"
+	"t,r,y\n"
+	"t,b,y\n"
+	"f,r,y\n"
+	"f,g,n\n"
+	"f,b,y\n"
+	"t,r,n\n";
+	GMatrix train;
+	train.parseArff(trainFile, strlen(trainFile));
+	GMatrix* pFeatures = train.cloneSub(0, 0, train.rows(), 2);
+	Holder<GMatrix> hFeatures(pFeatures);
+	GMatrix* pLabels = train.cloneSub(0, 2, train.rows(), 1);
+	Holder<GMatrix> hLabels(pLabels);
+	GNaiveBayes nb;
+	nb.setEquivalentSampleSize(0.0);
+	nb.train(*pFeatures, *pLabels);
+	GPrediction out;
+	double pat[2];
+	pat[0] = 0; pat[1] = 0;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 4.0/7.0*3.0/7.0, 5.0/12.0, 2.0/5.0*3.0/5.0, &out);
+	pat[0] = 0; pat[1] = 1;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 4.0/7.0*2.0/7.0, 5.0/12.0, 2.0/5.0*2.0/5.0, &out);
+	pat[0] = 0; pat[1] = 2;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 4.0/7.0*2.0/7.0, 5.0/12.0, 2.0/5.0*0.0/5.0, &out);
+	pat[0] = 1; pat[1] = 0;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 3.0/7.0*3.0/7.0, 5.0/12.0, 3.0/5.0*3.0/5.0, &out);
+	pat[0] = 1; pat[1] = 1;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 3.0/7.0*2.0/7.0, 5.0/12.0, 3.0/5.0*2.0/5.0, &out);
+	pat[0] = 1; pat[1] = 2;
+	nb.predictDistribution(pat, &out);
+	GNaiveBayes_CheckResults(7.0/12.0, 3.0/7.0*2.0/7.0, 5.0/12.0, 3.0/5.0*0.0/5.0, &out);
+}
+
+// static
+void GNaiveBayes::test()
+{
+	GNaiveBayes_testMath();
+	GAutoFilter af(new GNaiveBayes());
+	af.basicTest(0.77, 0.94);
+}
+#endif // !NO_TEST_CODE
+
+} // namespace GClasses

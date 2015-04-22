@@ -1,0 +1,72 @@
+Regressors (feature, index):
+(0, 0): 
+{SVM regressor}
+{Gaussian: mu = -0.273 sigma = 2.25 }
+(Entropy = 3.22)
+(0, 1): 
+{SVM regressor}
+{Gaussian: mu = 0 sigma = 3.77 }
+(Entropy = 3.96)
+(0, 2): 
+{SVM regressor}
+{Gaussian: mu = -0.227 sigma = 2.33 }
+(Entropy = 3.27)
+(0, 3): 
+{SVM regressor}
+{Gaussian: mu = 0 sigma = 3.68 }
+(Entropy = 3.93)
+Classifiers (feature, index):
+(0, 0): 
+{Waffles Decision Tree Classifier {feature: 0} { [||
+Is attr 0 < 5?
+   |
+   +Yes->a
+   |
+   +No->b
+|] } }
+NS Matrix:
+	0	1
+0	-0.774	1.81
+1	1	-0.582
+Confusion Matrix:
+	0	1
+0	0.857	0.143
+1	0.25	0.75
+
+(Entropy = 0.997)
+(0, 1): 
+{Waffles Classifier: {feature: 0, classifier type: 2 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.511	0.811
+1	1	-0.582
+Confusion Matrix:
+	0	1
+0	0.714	0.286
+1	0.25	0.75
+
+(Entropy = 0.997)
+(0, 2): 
+{Waffles Classifier: {feature: 0, classifier type: 3 Layer Neural Net}}
+NS Matrix:
+	0	1
+0	-0.774	1.81
+1	1	-0.582
+Confusion Matrix:
+	0	1
+0	0.857	0.143
+1	0.25	0.75
+
+(Entropy = 0.997)
+(0, 3): 
+{Waffles Classifier: {feature: 0, classifier type: Naive Bayes Classifier}}
+NS Matrix:
+	0	1
+0	-0.511	0.811
+1	0.418	-0.319
+Confusion Matrix:
+	0	1
+0	0.714	0.286
+1	0.375	0.625
+
+(Entropy = 0.997)

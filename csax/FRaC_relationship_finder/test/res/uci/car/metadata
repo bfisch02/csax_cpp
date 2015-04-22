@@ -1,0 +1,7 @@
+1	nominal	vhigh,high,med,low
+2	nominal	vhigh,high,med,low
+3	nominal	2,3,4,5more
+4	nominal	2,4,more
+5	nominal	small,med,big
+6	nominal	low,med,high
+7	class	unacc,acc,good,vgood

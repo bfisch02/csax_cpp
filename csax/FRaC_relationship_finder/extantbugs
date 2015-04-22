@@ -1,0 +1,5 @@
+1: RESOLVED -mode=release breaks the unknown representation of floating points.  This probably has to do with --ffastmath and NaN.
+
+2: Memory leaks occur in gnu parallelized options, such as sort.  The cause is unknown, but likely to be an issue with code provided by newer compiler options.
+
+3: Test mode file loading is leaking some memory.

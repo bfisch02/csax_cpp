@@ -1,0 +1,10 @@
+1	ignore
+2	real	0.11,1.0
+3	real	0.13,1.0
+4	real	0.21,1.0
+5	real	0.0,1.0
+6	real	0.5,1.0
+7	real	0.0,0.83
+8	real	0.0,0.73
+9	real	0.0,1.0
+10	class	CYT,NUC,MIT,ME3,ME2,ME1,EXC,VAC,POX,ERL

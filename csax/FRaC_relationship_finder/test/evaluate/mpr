@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+'''
+
+Compute and print the MPR (Median Percentile Rank)
+
+Copyright © 2009 Keith Noto.  Disributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html).
+
+'''
+__author__ = "Keith Noto <noto@cs.tufts.edu>";
+__license__ = "GPL";
+__copyright__ = "Copyright © 2009 Keith Noto";
+VERSION = __revision__ = "1.0";
+
+import sys,string,optparse,os,os.path,copy,fpformat,time,signal,random,math;
+
+def main():
+
+	import sys,string,optparse,os.path,signal;
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL); # properly handle SIGPIPE when piping output 
+
+	PROGRAM = os.path.basename(sys.argv[0]); 
+	USAGE = "[options] < input";
+	VERSION = "1.0";
+	SYNOPSIS = "Compute Median Percentile Rank from a set of (anomaly?, anomaly-score) pairs.  Disributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html).";
+
+	parser = optparse.OptionParser(usage="%s %s"%(PROGRAM,USAGE), version="%s version %s"%(PROGRAM,VERSION), description=SYNOPSIS);
+	(options, args) = parser.parse_args();
+
+	''' 
+	"median percentile rank" score, computed as follows:  Rank all the "normal"
+	training samples along with a single anomalous test sample (we've been
+	doing this using ranks from 0 to n for the n+1 samples).  Compute the rank
+	of the anomaly as a percentile (i.e., x *100 / n).  Then report the median
+	percentile over all the anomalous samples.   An ideal detector would score
+	0%, while 50% indicates random guessing. 
+	'''
+
+	data = []
+	for line in filter(lambda line : line, map(lambda line : line.split('#')[0], open(args[0],'r') if args else sys.stdin)):
+		[ anomaly, score ] = line.split(None,2)[:2]	# first two numbers
+		anomaly = ispos(anomaly) 
+		score = float(score)
+		data += [ (anomaly!=0, score) ]; 
+	sys.stdout.write( "%s\n" % (mpr(data)));
+	
+
+# map a set of (anomaly?, score) pairs to MPR
+def mpr( pairs ):
+
+	pairs=list(pairs);
+	P = []
+	normals = filter(lambda (a,s) : not a, pairs);
+
+	for (anomaly,score) in filter(lambda (a,s) : a, pairs): # for each anomaly
+
+		set = normals + [ (anomaly,score) ]; # consider all normals and this one anomaly
+
+		# sort by descending score, then by anomaly (i.e. break ties as the best case for the anomaly)
+		set.sort( cmp=lambda (a1,b1),(a2,b2) : -1 if b1 > b2 else 1 if b2 > b1 else -1 if a1>a2 else  1 if a1<a2 else 0  );
+
+		(best_x,n) = reduce( lambda (rank,index),(anomaly,score) : (index,index+1) if anomaly else (rank,index+1), set, (None,0) ); 
+
+		# now resort, breaking ties in the worst case for the anomaly
+		set.sort( cmp=lambda (a1,b1),(a2,b2) : -1 if b1 > b2 else 1 if b2 > b1 else -1 if a1<a2 else  1 if a1>a2 else 0  );
+		
+		(worst_x,n) = reduce( lambda (rank,index),(anomaly,score) : (index,index+1) if anomaly else (rank,index+1), set, (None,0) ); 
+
+		x = (best_x + worst_x) / 2.0;	# use midpoint
+		P += [ x * 100 / n ];
+
+	P.sort();
+	MPR = ( P[len(P)/2] if len(P)%2 else (P[len(P)/2]+P[(len(P)/2)-1])/2 ) if P else None;
+	return MPR;
+
+
+# Default function to determine if a label/target should be considered positive
+def ispos(target):
+	if target in [True,False]:
+		return target
+	try:
+		# numerical values are positive if they're positive
+		return float(target) > 0.0;
+	except:
+		return ((str(target))[0]) in "+pP";
+
+if (__name__ == "__main__"):
+	main();

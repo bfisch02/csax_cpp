@@ -1,0 +1,9 @@
+1	ignore
+2	real	0.0,0.89
+3	real	0.16,1.0
+4	nominal	0.48,1.00
+5	nominal	0.50,1.00
+6	real	0.0,0.88
+7	real	0.03,1.0
+8	real	0.0,0.99
+9	class	cp,im,pp,imU,om,omL,imL,imS

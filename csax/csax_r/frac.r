@@ -35,7 +35,7 @@ main <- function() {
 
 	ns <- frac( training.set, test.set, save.dir="output_location", frac.exe=frac.exe )
 	g <- sapply( ns, sum )
-	write.table( g, quote=FALSE, row.names=FALSE, col.names=FALSE, file=args[3] )
+	write.table( g, quote=TRUE, row.names=TRUE, col.names=TRUE, file=args[3] )
 
 } # main
 

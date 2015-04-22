@@ -1,0 +1,28 @@
+1	nominal	1,2
+2	nominal	1,9
+3	ignore
+4	real	35.4,40.8
+5	real	30.0,184.0
+6	real	8.0,96.0
+7	nominal	1,2,3,4
+8	nominal	1,2,3,4
+9	nominal	1,2,3,4,5,6
+10	nominal	1,2,3
+11	nominal	1,2,3,4,5
+12	nominal	1,2,3,4
+13	nominal	1,2,3,4
+14	nominal	1,2,3
+15	nominal	1,2,3
+16	real	1.0,7.5
+17	nominal	1,2,3,4
+18	nominal	1,2,3,4,5
+19	real	23.0,75.0
+20	real	3.3,89.0
+21	nominal	1,2,3
+22	real	0.1,10.1
+23	class	1,2,3
+24	nominal	1,2
+25	ignore
+26	ignore
+27	ignore
+28	nominal	1,2

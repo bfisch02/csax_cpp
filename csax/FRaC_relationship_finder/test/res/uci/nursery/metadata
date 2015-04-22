@@ -1,0 +1,9 @@
+1	nominal	usual,pretentious,great_pret
+2	nominal	proper,less_proper,improper,critical,very_crit
+3	nominal	complete,completed,incomplete,foster
+4	nominal	1,2,3,more
+5	nominal	convenient,less_conv,critical
+6	nominal	convenient,inconv
+7	nominal	non-prob,slightly_prob,problematic
+8	nominal	recommended,priority,not_recom
+9	class	recommend,priority,not_recom,spec_prior,very_recom
