@@ -9,6 +9,10 @@ using namespace std;
 
 struct GeneScorePair;
 
-void runCSAX(vector<Sample *> traindata, vector<Sample *> testdata,
-        string genesets_file, vector<string> genenames, int num_bags,
-        float gamma);
+struct SampleList {
+    vector<Sample *> data;
+    vector<string> geneNames;
+};
+
+void runCSAX(SampleList traindata, SampleList testdata, string testfile,
+        string genesets_file, int num_bags, float gamma);

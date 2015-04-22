@@ -22,11 +22,11 @@ csax.r -B 5 examples.input/example.training.set examples.input/example.test.set 
 echo -ne "\nRESULT: CSAX AUC=`auc.r examples.input/example.test.set.labels examples.output/csax.g`\n\n"
  *from the examples.bash file
  */
-struct data {
-    vector<Sample *> data;
-    vector<string> geneNames;
-};
-data getData(string matrixFile);
+//struct SampleList {
+ //   vector<Sample *> data;
+  //  vector<string> geneNames;
+//};
+SampleList getData(string matrixFile);
 void printSamples(vector<Sample> samples);
 
 int main(int argc, char **argv) {
@@ -42,53 +42,21 @@ int main(int argc, char **argv) {
     (void)num_bags;
     (void)gamma;
 
-    ofstream training;
-    training.open("trainingdata_buffer");
 
-    data traindata = getData(argv[1]);
-    double fractionBag = .5;
-    unsigned numTraining = traindata.data.size();
-    unsigned numTrue = fractionBag * numTraining;
-    vector<bool> truthVector;
+    SampleList traindata = getData(argv[1]);
+    SampleList testdata = getData(argv[2]);
+    runCSAX(traindata, testdata, argv[2], argv[3], 40, .95);
 
-    //make a random permutation parallel array
-    for (unsigned i = 0; i < numTrue; i++) {
-        truthVector.push_back(true);
-    }
-    for (unsigned i = numTrue; i < numTraining; i++) {
-        truthVector.push_back(false);
-    }
-    std::random_shuffle (truthVector.begin(), truthVector.end());
-
-    //output training data to a file
-    for (unsigned i = 0; i < traindata.data.size(); i++) {
-        training << traindata.data[i]->getName() << "\t";
-    }
-    training << endl;
-
-    unsigned numGenes = traindata.geneNames.size();
-    for (unsigned j = 0; j < numGenes; j++) {
-        training << traindata.geneNames[j] << "\t";
-        for (unsigned i = 0; i < traindata.data.size(); i++) {
-            if (truthVector[i])
-                training << traindata.data[i]->getGene(j) << "\t";
-        }
-        training << endl;
-    }
-
-    training.close();
-
-    ofstream test;
+    /*ofstream test;
     test.open("testdata_buffer");
 
     //output testdata to a file
-    data testdata = getData(argv[2]);
     for (unsigned i = 0; i < testdata.data.size(); i++) {
         test << testdata.data[i]->getName() << "\t";
     }
     test << endl;
 
-    numGenes = testdata.geneNames.size();
+    unsigned numGenes = testdata.geneNames.size();
     for (unsigned j = 0; j < numGenes; j++) {
         test << testdata.geneNames[j] << "\t";
         for (unsigned i = 0; i < testdata.data.size(); i++) {
@@ -97,7 +65,7 @@ int main(int argc, char **argv) {
         test << endl;
     }
 
-    test.close();
+    test.close();*/
 
     //system("./bashtest.bash");
     // TODO: Add options parsing
@@ -105,7 +73,7 @@ int main(int argc, char **argv) {
     //runCSAX(argv[3], argv[4], argv[5], num_bags, gamma);
 }
 
-data getData(string matrixFile)
+SampleList getData(string matrixFile)
 {
     //cerr << "Beginning of getData" << endl;
     vector<Sample*> inputBuffer;
