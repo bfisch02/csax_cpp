@@ -16,6 +16,8 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <sys/types.h>
+#include <dirent.h>
 using namespace std;
 
 const string FRAC_OUTPUT = "ns.gz";
@@ -162,13 +164,16 @@ map<string, double> *parseGSEAOutput(string gseaFileP)
     matrix.open(gseaFileP);
     string line = "";
     string genesetname;
-    double score, junk;
+    double score;
+    string junk;
     if (matrix.is_open()) {
         //Don't need the header, just call getline to remove it
         getline(matrix, line);
         inputBuffer = new map<string, double>;
         while (matrix >> genesetname) {
-            matrix >> score >> junk >> junk >> junk >> junk >> junk;
+            cerr << "NAME: " << genesetname << endl;
+            matrix >> junk >> junk >> score >> junk >> junk >> junk >> junk >> junk >> junk >> junk >> junk;
+            cerr << "Score: " << score << endl;
             (*inputBuffer)[genesetname] = score;
         }
     }
@@ -220,22 +225,34 @@ vector<map<string, double>*> runGSEA(string genesets_file,
 
     inputfile = "gseainput1.rnk";
     writeGSEAInput(genescores, 0, inputfile);
-    cerr << "Still good woo" << endl;
-    exit(0);
+
     vector<map<string, double>*> enrichment_scores;
+    string outputfolder = "output_location/gsea_output";
+    string gseajar = "gsea/gsea.jar";
 
-    //string gseaFileP = "output_location/gsea_output.xls.gz";
-    //system("gzip -d output_location/ns.gz");
-    /*string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
-    system(command.c_str());
-    string fracFileP = "output_location/ns.gz";
-    system("gzip -d output_location/ns.gz");*/
+    cerr << "About to run GSEA..." << endl;
 
-    system("java -cp " + gsea.jar + " -Xmx1g xtools.gsea.GseaPreranked -gmx " + genesets_file + " -rnk " + inputfile + " -out " + gseaoutput + " -rnd_seed 9141976 -rpt_label csax -collapse false -mode Max_probe -norm meandiv -nperm 1000 -scoring_scheme weighted -include_only_symbols true -make_sets false -plot_top_x 0 -set_max 500 -set_min 7 -zip_report false -gui false 1>/dev/null ")
+    string cmd = "java -cp " + gseajar + " -Xmx1g xtools.gsea.GseaPreranked -gmx " + genesets_file + " -rnk " + inputfile + " -out " + outputfolder + " -rnd_seed 9141976 -rpt_label csax -collapse false -mode Max_probe -norm meandiv -nperm 1000 -scoring_scheme weighted -include_only_symbols true -make_sets false -plot_top_x 0 -set_max 500 -set_min 7 -zip_report false -gui false 1>/dev/null ";
 
-    string decompgseaFileP = "output_location/gsea_output.xls";
+    system(cmd.c_str());
 
-    enrichment_scores.push_back(parseGSEAOutput(decompgseaFileP));
+    DIR *directory = opendir(outputfolder.c_str());
+    struct dirent *entry;
+    if (directory == NULL) {
+        cerr << "No gsea output... Abort!" << endl;
+        exit(1);
+    }
+    while ((entry = readdir(directory)) != NULL) {
+        if (entry->d_name[0] == 'c') {
+            break;
+        }
+    }
+    string suffix = string(entry->d_name).substr(19);
+    string gseaoutput = outputfolder + "/" + entry->d_name +
+        "/gsea_report_for_na_pos_" + suffix + ".xls";
+    cerr << "Gseaoutput: " << gseaoutput << endl;
+
+    enrichment_scores.push_back(parseGSEAOutput(gseaoutput));
     
     return enrichment_scores;
 }
