@@ -231,6 +231,8 @@ vector<map<string, double>*> runGSEA(string genesets_file,
     string fracFileP = "output_location/ns.gz";
     system("gzip -d output_location/ns.gz");*/
 
+    system("java -cp " + gsea.jar + " -Xmx1g xtools.gsea.GseaPreranked -gmx " + genesets_file + " -rnk " + inputfile + " -out " + gseaoutput + " -rnd_seed 9141976 -rpt_label csax -collapse false -mode Max_probe -norm meandiv -nperm 1000 -scoring_scheme weighted -include_only_symbols true -make_sets false -plot_top_x 0 -set_max 500 -set_min 7 -zip_report false -gui false 1>/dev/null ")
+
     string decompgseaFileP = "output_location/gsea_output.xls";
 
     enrichment_scores.push_back(parseGSEAOutput(decompgseaFileP));
