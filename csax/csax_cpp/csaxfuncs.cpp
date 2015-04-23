@@ -34,6 +34,7 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
         string genesets_file, vector<GeneSetManager *> managers);
 void samplesToFile(SampleList samples, string filename, double percent_to_add);
 vector<GeneScoreList *> parseFRaCOutput(string fracFileP);
+map<string, double> *parseGSEAOutput(string gseaFileP);
 
 // Definitions
 
@@ -44,9 +45,11 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
     vector<GeneScoreList *> genescores =
         runFRaC(traindata, testfile, true);
 
-    cerr << "Note to brett, I put an exit here right before the first runGSEA call remove it"
-         <<  " to test GSEA, line 48 in csaxfuncs.cpp" << endl;
-    exit(0);
+    /*cerr << "Size of genescores: " << genescores.size() << endl;
+    for (unsigned i = 0; i < genescores.size(); i++) {
+        cerr << "Gene " << i << ": " << genescores[i]-> gene << endl;
+        cerr << "  Scores: " << genescores[i]->scores[0] << endl;
+    }*/
 
     // Run GSEA as well
     vector<map<string, double>*> ES = runGSEA(genesets_file, genescores);
@@ -56,14 +59,9 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
         managers.push_back(new GeneSetManager());
     }
 
+    num_bags = 1;
     for (int b = 0; b < num_bags; b++) {
         CSAX_iteration(traindata, testdata, testfile, genesets_file, managers);
-    }
-
-    cout << "STILL GOOD" << endl;
-
-    for (unsigned i = 0; i < managers.size(); i++) {
-        managers[i]->sortByMedian();
     }
 
     double cur_score = 0;
@@ -71,6 +69,8 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
         cur_score = managers[i]->getAnomalyScore(gamma, ES[i]);
         cout << "Score for " << i << ": " << cur_score << endl;
     }
+
+    cerr << "Still good" << endl;
 
 }
 
@@ -90,11 +90,16 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
     vector<map<string, double> *> enrichmentscores =
         runGSEA(genesets_file, genescores);
 
+    int rank;
     // For each test sample
     for (unsigned i = 0; i < testdata.data.size(); i++) {
+        rank = 1; // TODO: Check if first rank should be 1 or 0
         for (std::map<string, double>::iterator it=enrichmentscores[i]->begin();
                 it != enrichmentscores[i]->end(); it++) {
-            managers[i]->addRankingToGeneset(it->second, it->first);
+            // BRETT'S ADDITION
+            if ((unsigned)i > 0) return;
+            cout << "RANK: " << rank << endl;
+            managers[i]->addRankingToGeneset(rank++, it->first);
         }
     }
 }
@@ -115,16 +120,25 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
 
 
     //string command = "../csax_r/frac.r " + trainfile + " ../csax_r/examples.input/example.test.set FRaC_gene_anomaly_buffer";
+    
+    /* TEMPORARILY COMMENTED OUT FOR BRETT
+
     string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
     system(command.c_str());
     string fracFileP = "output_location/ns.gz";
-
     system("gzip -d output_location/ns.gz");
+    */
+
     string decompfracFileP = "output_location/ns";
 
     vector<GeneScoreList *> genescores = parseFRaCOutput(decompfracFileP);
+    
+    /* TEMPORARILY COMMENTED OUT FOR BRETT
     remove(fracFileP.c_str());
+    
     remove(decompfracFileP.c_str());
+    */
+
     /* //For debugging: prints out the generated genescores
     for (unsigned i = 0; i < genescores.size(); i++) {
         cout << genescores[i]->gene;
@@ -139,10 +153,26 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
 }
 
 
-//struct GeneScoreList {
-//    string gene;
-//    vector<double> scores;
-//};
+map<string, double> *parseGSEAOutput(string gseaFileP)
+{
+    map<string, double> *inputBuffer;
+    ifstream matrix;
+    matrix.open(gseaFileP);
+    string line = "";
+    string genesetname;
+    double score, junk;
+    if (matrix.is_open()) {
+        //Don't need the header, just call getline to remove it
+        getline(matrix, line);
+        inputBuffer = new map<string, double>;
+        while (matrix >> genesetname) {
+            matrix >> score >> junk >> junk >> junk >> junk >> junk;
+            (*inputBuffer)[genesetname] = score;
+        }
+    }
+    return inputBuffer;
+}
+
 vector<GeneScoreList *> parseFRaCOutput(string fracFileP)
 {
     vector<GeneScoreList *> inputBuffer;
@@ -184,8 +214,15 @@ vector<map<string, double>*> runGSEA(string genesets_file,
     (void)genesets_file;
     (void)genescores;
     //TODO: Call GSEA program, which takes in a gene set database and genescores
-    // and returns a list of genes, ranked by their "enrichment"
+
     vector<map<string, double>*> enrichment_scores;
+
+    //string gseaFileP = "output_location/gsea_output.xls.gz";
+    //system("gzip -d output_location/ns.gz");
+    string decompgseaFileP = "output_location/gsea_output.xls";
+
+    enrichment_scores.push_back(parseGSEAOutput(decompgseaFileP));
+    
     return enrichment_scores;
 }
 

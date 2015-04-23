@@ -13,6 +13,7 @@ using namespace std;
 struct GeneSet {
     string name;
     vector<int> rankings;
+    float median;
 };
 
 class GeneSetManager {
