@@ -35,6 +35,8 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
 void samplesToFile(SampleList samples, string filename, double percent_to_add);
 vector<GeneScoreList *> parseFRaCOutput(string fracFileP);
 map<string, double> *parseGSEAOutput(string gseaFileP);
+void writeGSEAInput(vector<GeneScoreList *> genescores, unsigned index,
+        string filename);
 
 // Definitions
 
@@ -214,11 +216,21 @@ vector<map<string, double>*> runGSEA(string genesets_file,
     (void)genesets_file;
     (void)genescores;
     //TODO: Call GSEA program, which takes in a gene set database and genescores
+    string inputfile;
 
+    inputfile = "gseainput1.rnk";
+    writeGSEAInput(genescores, 0, inputfile);
+    cerr << "Still good woo" << endl;
+    exit(0);
     vector<map<string, double>*> enrichment_scores;
 
     //string gseaFileP = "output_location/gsea_output.xls.gz";
     //system("gzip -d output_location/ns.gz");
+    /*string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
+    system(command.c_str());
+    string fracFileP = "output_location/ns.gz";
+    system("gzip -d output_location/ns.gz");*/
+
     string decompgseaFileP = "output_location/gsea_output.xls";
 
     enrichment_scores.push_back(parseGSEAOutput(decompgseaFileP));
@@ -264,5 +276,17 @@ void samplesToFile(SampleList samples, string filename, double percent_to_add)
         f << endl;
     }
 
+    f.close();
+}
+
+void writeGSEAInput(vector<GeneScoreList *> genescores, unsigned index,
+        string filename)
+{
+    ofstream f;
+    f.open(filename);
+    for (unsigned i = 0; i < genescores.size(); i++) {
+        f << genescores[i]->gene << '\t' 
+          << genescores[i]->scores[index] << endl;
+    }
     f.close();
 }
