@@ -15,4 +15,4 @@ struct SampleList {
 };
 
 void runCSAX(SampleList traindata, SampleList testdata, string testfile,
-        string genesets_file, int num_bags, double gamma);
+        string genesets_file, string output_dir, int num_bags, double gamma);

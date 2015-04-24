@@ -20,14 +20,15 @@
 #include <dirent.h>
 using namespace std;
 
-const string FRAC_OUTPUT = "ns.gz";
-
 struct GeneScoreList {
     string gene;
     vector<double> scores;
 };
 
+string OUTPUT_DIR = "";
+
 // Declarations
+void initializeOutputDir(string output_dir);
 vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
         bool use_all);
 vector<map<string, double>*> runGSEA(string genesets_file,
@@ -43,17 +44,12 @@ void writeGSEAInput(vector<GeneScoreList *> genescores, unsigned index,
 // Definitions
 
 void runCSAX(SampleList traindata, SampleList testdata, string testfile,
-        string genesets_file, int num_bags, double gamma)
+        string genesets_file, string output_dir, int num_bags, double gamma)
 {
+    initializeOutputDir(output_dir);
     // First, we have to process the full training data
     vector<GeneScoreList *> genescores =
         runFRaC(traindata, testfile, true);
-
-    /*cerr << "Size of genescores: " << genescores.size() << endl;
-    for (unsigned i = 0; i < genescores.size(); i++) {
-        cerr << "Gene " << i << ": " << genescores[i]-> gene << endl;
-        cerr << "  Scores: " << genescores[i]->scores[0] << endl;
-    }*/
 
     // Run GSEA as well
     vector<map<string, double>*> ES = runGSEA(genesets_file, genescores);
@@ -63,7 +59,7 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
         managers.push_back(new GeneSetManager());
     }
 
-    num_bags = 1;
+    num_bags = 5;
     for (int b = 0; b < num_bags; b++) {
         CSAX_iteration(traindata, testdata, testfile, genesets_file, managers);
     }
@@ -74,8 +70,14 @@ void runCSAX(SampleList traindata, SampleList testdata, string testfile,
         cout << "Score for " << i << ": " << cur_score << endl;
     }
 
-    cerr << "Still good" << endl;
+}
 
+void initializeOutputDir(string output_dir)
+{
+    OUTPUT_DIR = output_dir;
+    if (OUTPUT_DIR[OUTPUT_DIR.length() - 1] != '/') {
+        OUTPUT_DIR += '/';
+    }
 }
 
 // Run FRaC and GSEA on random subset of traindata, and add ranking to each
@@ -102,7 +104,6 @@ void CSAX_iteration(SampleList traindata, SampleList testdata, string testfile,
                 it != enrichmentscores[i]->end(); it++) {
             // BRETT'S ADDITION
             if ((unsigned)i > 0) return;
-            cout << "RANK: " << rank << endl;
             managers[i]->addRankingToGeneset(rank++, it->first);
         }
     }
@@ -118,22 +119,17 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
     } else {
         samplesToFile(traindata, trainfile, .5);
     }
-    // TODO: Call FRaC program, which takes in traindata and testdata
-    // and returns a table of anomaly scores, where the rows represent
-    // genes and the columns represent test instances.
 
-
-    //string command = "../csax_r/frac.r " + trainfile + " ../csax_r/examples.input/example.test.set FRaC_gene_anomaly_buffer";
-    
     /* TEMPORARILY COMMENTED OUT FOR BRETT
 
-    string command = "./frac.r " + trainfile + " " + testfile + " FRaC_anomaly_buffer";
+    string command = "./frac.r " + trainfile + " " + testfile + " " + OUTPUT_DIR;
     system(command.c_str());
-    string fracFileP = "output_location/ns.gz";
-    system("gzip -d output_location/ns.gz");
+    string fracFileP = OUTPUT_DIR + "ns.gz";
+    command = "gzip -d + " fracFileP;
+    system(command.c_str());
     */
 
-    string decompfracFileP = "output_location/ns";
+    string decompfracFileP = OUTPUT_DIR + "ns";
 
     vector<GeneScoreList *> genescores = parseFRaCOutput(decompfracFileP);
     
@@ -143,16 +139,6 @@ vector<GeneScoreList *> runFRaC(SampleList traindata, string testfile,
     remove(decompfracFileP.c_str());
     */
 
-    /* //For debugging: prints out the generated genescores
-    for (unsigned i = 0; i < genescores.size(); i++) {
-        cout << genescores[i]->gene;
-        unsigned numQuery = genescores[i]->scores.size();
-        for (unsigned j = 0; j < numQuery; j++) {
-            cout << "\t" << genescores[i]->scores[j];
-        }
-        cout << endl;
-    }
-    */
     return genescores;
 }
 
@@ -220,39 +206,47 @@ vector<map<string, double>*> runGSEA(string genesets_file,
 {
     (void)genesets_file;
     (void)genescores;
-    //TODO: Call GSEA program, which takes in a gene set database and genescores
     string inputfile;
-
-    inputfile = "gseainput1.rnk";
-    writeGSEAInput(genescores, 0, inputfile);
-
     vector<map<string, double>*> enrichment_scores;
-    string outputfolder = "output_location/gsea_output";
+    string outputfolder;
     string gseajar = "gsea/gsea.jar";
+    unsigned num_tests = genescores[0]->scores.size();
+    cerr << "Size: " << num_tests << endl;
+    for (unsigned i = 0; i < num_tests; i++) {
+        cerr << "Doing this stuff for i = " << i << endl;
+        inputfile = "gseainput" + std::to_string(i + 1) + ".rnk";
+        writeGSEAInput(genescores, i, inputfile);
 
-    cerr << "About to run GSEA..." << endl;
+        outputfolder = "output_location/gsea_output";
 
-    string cmd = "java -cp " + gseajar + " -Xmx1g xtools.gsea.GseaPreranked -gmx " + genesets_file + " -rnk " + inputfile + " -out " + outputfolder + " -rnd_seed 9141976 -rpt_label csax -collapse false -mode Max_probe -norm meandiv -nperm 1000 -scoring_scheme weighted -include_only_symbols true -make_sets false -plot_top_x 0 -set_max 500 -set_min 7 -zip_report false -gui false 1>/dev/null ";
+        cerr << "About to run GSEA..." << endl;
 
-    system(cmd.c_str());
+        string cmd = "java -cp " + gseajar + " -Xmx1g xtools.gsea.GseaPreranked -gmx " + genesets_file + " -rnk " + inputfile + " -out " + outputfolder + " -rnd_seed 9141976 -rpt_label csax -collapse false -mode Max_probe -norm meandiv -nperm 1000 -scoring_scheme weighted -include_only_symbols true -make_sets false -plot_top_x 0 -set_max 500 -set_min 7 -zip_report false -gui false 1>/dev/null ";
 
-    DIR *directory = opendir(outputfolder.c_str());
-    struct dirent *entry;
-    if (directory == NULL) {
-        cerr << "No gsea output... Abort!" << endl;
-        exit(1);
-    }
-    while ((entry = readdir(directory)) != NULL) {
-        if (entry->d_name[0] == 'c') {
-            break;
+        system(cmd.c_str());
+
+        DIR *directory = opendir(outputfolder.c_str());
+        struct dirent *entry;
+        if (directory == NULL) {
+            cerr << "No gsea output... Abort!" << endl;
+            exit(1);
         }
-    }
-    string suffix = string(entry->d_name).substr(19);
-    string gseaoutput = outputfolder + "/" + entry->d_name +
-        "/gsea_report_for_na_pos_" + suffix + ".xls";
-    cerr << "Gseaoutput: " << gseaoutput << endl;
+        while ((entry = readdir(directory)) != NULL) {
+            if (entry->d_name[0] == 'c') {
+                break;
+            }
+        }
+        string suffix = string(entry->d_name).substr(19);
+        string gseaoutput = outputfolder + "/" + entry->d_name +
+            "/gsea_report_for_na_pos_" + suffix + ".xls";
+        cerr << "Gseaoutput: " << gseaoutput << endl;
 
-    enrichment_scores.push_back(parseGSEAOutput(gseaoutput));
+        enrichment_scores.push_back(parseGSEAOutput(gseaoutput));
+        cerr << "About to remove " << outputfolder << endl;
+        cmd = "rm -r " + outputfolder;
+        system(cmd.c_str());
+        cerr << "GOOD!" << endl;
+    }
     
     return enrichment_scores;
 }
