@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# Copyright © 2011 Keith Noto.  Disributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html).
+
+__author__ = "Keith Noto <noto@cs.tufts.edu>"
+__license__ = "GPL"
+__copyright__ = "Copyright © 2011 Keith Noto"
+VERSION = __revision__ = "1.0"
+
+import sys,string,optparse,os,os.path,copy,fpformat,time,signal,random,math,re
+
+def main():
+
+	import sys,string,optparse,os.path,signal
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL) # properly handle SIGPIPE when piping output 
+
+	PROGRAM = os.path.basename(sys.argv[0])
+	USAGE = "[options] < input"
+	VERSION = "1.0"
+	SYNOPSIS = "Convert FRaC-format input to LIBSVM-format input.  Distributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html)."
+
+	parser = optparse.OptionParser(usage="%s %s"%(PROGRAM,USAGE), version="%s version %s"%(PROGRAM,VERSION), description=SYNOPSIS)
+	(options, args) = parser.parse_args()
+
+	input = open(args[0],'r') if args and args[0]!='-' else sys.stdin
+	out = sys.stdout
+
+	for line in input:
+		data = line.split()
+		v = map(lambda i : (i+1,data[i]), range(len(data)))
+		v = filter(lambda (i,v) : float(v) != 0.0, v) # remove zeros
+		out.write("0\t%s\n" % ('\t'.join(map(lambda (i,v) : "%d:%s" % (i,v), v))))
+
+	return
+
+if __name__=='__main__':
+	try:
+		main()
+	except KeyboardInterrupt:
+		pass
+	except Exception,ex:
+		sys.stderr.write("%s: %s\n" % (sys.argv[0], str(ex)))
+

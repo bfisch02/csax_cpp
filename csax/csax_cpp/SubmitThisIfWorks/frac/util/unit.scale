@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# Copyright © 2011 Keith Noto.  Disributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html).
+
+__author__ = "Keith Noto <noto@cs.tufts.edu>"
+__license__ = "GPL"
+__copyright__ = "Copyright © 2011 Keith Noto"
+VERSION = __revision__ = "1.0"
+
+import sys,string,optparse,os,os.path,signal,math 
+
+def main():
+
+	import sys,string,optparse,os.path,signal
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL) # properly handle SIGPIPE when piping output 
+
+	PROGRAM = os.path.basename(sys.argv[0])
+	USAGE = "[options] < input (whitespace-separated components, one vector per line)"
+	VERSION = "1.0"
+	SYNOPSIS = "Rescale all vectors to lie on a unit hypersphere.  Distributed under Gnu General Public License (see http://www.gnu.org/licenses/gpl.html)."
+
+	parser = optparse.OptionParser(usage="%s %s"%(PROGRAM,USAGE), version="%s version %s"%(PROGRAM,VERSION), description=SYNOPSIS)
+	(options, args) = parser.parse_args()
+
+	inputs = map(lambda filename : open(filename,'r') if filename != '-' else sys.stdin, args) if args else [sys.stdin]
+
+	map(lambda input : map(lambda line : sys.stdout.write("%s\n" % ( '\t'.join(map(str, scale(map(float,line.split())))))), input), inputs)
+
+	return
+
+def length(X):
+	return math.sqrt(sum(map(lambda x : x*x, X)))
+
+def scale(X):
+	d = length(X)
+	return map(lambda x : x/d, X)
+
+if __name__=='__main__':
+	#try:
+	#	main()
+	#except KeyboardInterrupt:
+	#	pass
+	#except Exception,ex:
+	#	sys.stderr.write("%s: %s\n" % (sys.argv[0], str(ex)))
+	main()

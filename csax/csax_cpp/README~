@@ -1,0 +1,82 @@
+CSAX in C++ Reimplementation by Brett Fischler and Jacob Gerace
+
+To run, you will need the following on your system:
+-R
+-Java
+-g++
+-gzip to unzip frac's ns.gz file
+
+This was tested on Ubuntu 14.0 with the lastest version of all 3 of them.
+Currently this compiles but does not run due to an r error on the tufts cs
+servers.
+
+Make sure not to replace frac.r with the provided version of frac.r, we
+have modified it to output the whole gene vs sample anomaly score table,
+which is put into output_directory
+
+The provided file is also put into output_directory/CSAX_anomaly_scores
+
+You can run on the example set from the CSAX download via:
+./runOnLong
+
+(You may need to chmod runOnLong to make it executable)
+
+To get a quick run of our program please use ./runOnShort, which runs on
+only the first 249 gene data from examples.input
+
+The syntax for running is:
+./CSAX -B <number of bags> <training set file> <test set file> <gene set
+files> output_location
+
+please use "output_location" for the last argument verbatim, as that is
+where we have specified FRaC to put its files
+
+The format of the input files is identical to that specified by the
+original CSAX implementation written in R, please see their documentation
+for details.
+
+A sample output when run on the entire example set over 40 bagging
+iterations is:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
