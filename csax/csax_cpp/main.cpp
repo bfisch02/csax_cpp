@@ -30,24 +30,19 @@ void printSamples(vector<Sample> samples);
 int main(int argc, char **argv) {
     if (argc < 5) {
         cerr << "Usage: ./csax [options] <training set> <test set> "
-             << "<gene set database> <cache directory> [<output file>]"
+             << "<gene set database> <output directory>"
              << endl;
         exit(1);
     }
 
     int num_bags = 40; // Default number of bags
     double gamma = .95; // Default gamma value
-    (void)num_bags;
-    (void)gamma;
 
     SampleList traindata = getData(argv[1]);
     SampleList testdata = getData(argv[2]);
-    runCSAX(traindata, testdata, argv[2], argv[3], num_bags, .94);
+    runCSAX(traindata, testdata, (string)argv[2], (string)argv[3], (string)argv[4], num_bags, gamma);
 
-    //system("./bashtest.bash");
     // TODO: Add options parsing
-
-    //runCSAX(argv[3], argv[4], argv[5], num_bags, gamma);
 }
 
 SampleList getData(string matrixFile)
