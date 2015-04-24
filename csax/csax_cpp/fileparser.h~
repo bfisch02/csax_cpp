@@ -1,0 +1,5 @@
+void samplesToFile(SampleList samples, string filename, double percent_to_add);
+vector<GeneScoreList *> parseFRaCOutput(string fracFileP);
+map<string, double> *parseGSEAOutput(string gseaFileP);
+void writeGSEAInput(vector<GeneScoreList *> genescores, unsigned index,
+        string filename);

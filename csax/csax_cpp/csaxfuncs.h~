@@ -14,5 +14,5 @@ struct SampleList {
     vector<string> geneNames;
 };
 
-void runCSAX(SampleList traindata, string testfile, string genesets_file,
-        int num_bags, float gamma);
+void runCSAX(SampleList traindata, SampleList testdata, string testfile,
+        string genesets_file, int num_bags, double gamma);

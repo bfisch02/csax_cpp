@@ -33,7 +33,7 @@ main <- function() {
 
 	if (!file.nonzero(frac.exe)) { stop(sprintf("Missing %s", frac.exe)) }
 
-	ns <- frac( training.set, test.set, save.dir="output_location", frac.exe=frac.exe )
+	ns <- frac( training.set, test.set, save.dir="args[3]", frac.exe=frac.exe )
 	g <- sapply( ns, sum )
 	write.table( g, quote=FALSE, row.names=FALSE, col.names=FALSE, file=args[3] )
 
