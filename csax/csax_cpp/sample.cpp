@@ -7,6 +7,8 @@
 #include <vector>
 using namespace std;
 
+/*Default constructor
+ */
 Sample::Sample(int n) {
     genecount = n;
 
@@ -18,6 +20,8 @@ Sample::Sample(int n) {
     c = -1;
 }
 
+/*Preferred constructor, sets up all data
+ */
 Sample::Sample(int n, string newName, vector<double> newGenes) {
     genecount = n;
 
@@ -30,6 +34,8 @@ Sample::Sample(int n, string newName, vector<double> newGenes) {
     c = -1;
     name = newName;
 }
+
+/*self explanator accessor and mutator functions*/
 
 int Sample::getClass() {
     return c;
@@ -59,6 +65,7 @@ double Sample::getGene(unsigned index) {
     return geneset[index];
 }
 
+/*for debugging*/
 void Sample::print() {
     for (auto i = geneset.begin(); i != geneset.end(); i++) {
         cout << *i << endl;

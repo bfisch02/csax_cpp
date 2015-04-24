@@ -1,4 +1,4 @@
-./CSAX small.input/small.training.set small.input/really.small.test.set examples.input/reactome.gmt output_location
+./CSAX -B 2 small.input/small.training.set small.input/small.test.set examples.input/reactome.gmt output_location
 
 #to compare to frac
 #./frac.r small.input/small.training.set small.input/small.test.set outputfrac

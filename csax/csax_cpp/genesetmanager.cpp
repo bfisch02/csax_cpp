@@ -9,6 +9,7 @@
 #include <algorithm>
 using namespace std;
 
+/*Sort function using C++ included sort*/
 bool sortfunction (GeneSet *a, GeneSet *b) {
     unsigned size;
     if (a->median == -1) {
@@ -37,6 +38,7 @@ bool sortfunction (GeneSet *a, GeneSet *b) {
 GeneSetManager::GeneSetManager() {
 }
 
+/*Adds a ranking to the manager */
 void GeneSetManager::addRankingToGeneset(int ranking, string geneset)
 {
     GeneSet *g;
@@ -51,19 +53,20 @@ void GeneSetManager::addRankingToGeneset(int ranking, string geneset)
     g->rankings.push_back(ranking);
 }
 
+/*Sorting wrapper function */
 void GeneSetManager::sortByMedian()
 {
     std::sort(genesets.begin(), genesets.end(), sortfunction);
 }
 
+/*Calculates anomaly score for a given enrichment score map using a gamma value
+ * */
 double GeneSetManager::getAnomalyScore(double gamma, map<string, double> *ES)
 {
     sortByMedian();
     double total_score = 0;
     double cur_score = 0;
-    cerr << "About to print median values" << endl;
     for (unsigned i = 0; i < genesets.size(); i++) {
-        cerr << genesets[i]->median << endl;
         if (ES->count(genesets[i]->name) == 0) {
             continue;
         } else {

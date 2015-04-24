@@ -14,5 +14,6 @@ struct SampleList {
     vector<string> geneNames;
 };
 
+/*only one public function, see class for details */
 void runCSAX(SampleList traindata, SampleList testdata, string testfile,
         string genesets_file, string output_dir, int num_bags, double gamma);

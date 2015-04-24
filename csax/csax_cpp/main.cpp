@@ -29,22 +29,31 @@ void printSamples(vector<Sample> samples);
 
 int main(int argc, char **argv) {
     if (argc < 5) {
-        cerr << "Usage: ./csax [options] <training set> <test set> "
-             << "<gene set database> <output directory>"
-             << endl;
+        //cerr << "Usage: ./csax [options] <training set> <test set> "
+        //     << "<gene set database> <output directory>"
+        //     << endl;
+         cerr << "Usage: ./csax -B <number of iterations> <training set> <test set> "
+             << "<gene set database> <output directory>" << endl;
         exit(1);
     }
 
-    int num_bags = 40; // Default number of bags
+    string help = "-h";
+    if (argv[1] == help.c_str()) {
+         cout << "Usage: ./csax -B <number of iterations> <training set> <test set> "
+              << "<gene set database> <output directory>" << endl;
+         exit(0);
+    }
+
+    int num_bags = atoi(argv[2]); // Default number of bags
     double gamma = .95; // Default gamma value
 
-    SampleList traindata = getData(argv[1]);
-    SampleList testdata = getData(argv[2]);
-    runCSAX(traindata, testdata, (string)argv[2], (string)argv[3], (string)argv[4], num_bags, gamma);
+    SampleList traindata = getData(argv[3]);
+    SampleList testdata = getData(argv[4]);
+    runCSAX(traindata, testdata, (string)argv[4], (string)argv[5], (string)argv[6], num_bags, gamma);
 
-    // TODO: Add options parsing
 }
-
+/* Parses the csax input file
+ */
 SampleList getData(string matrixFile)
 {
     vector<Sample*> inputBuffer;
@@ -90,14 +99,4 @@ SampleList getData(string matrixFile)
     return {inputBuffer, nameGenes};
 }
 
-void printSamples(vector<Sample> samples)
-{
-    int j = 0;
-    for (auto i = samples.begin(); i != samples.end(); i++) {
-        cout << "The " << j << "th" << "sample is: " << endl;
-        (*i).print();
-        cout << endl;
-        j++;
-    }
-}
 

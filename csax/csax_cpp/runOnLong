@@ -1,0 +1,3 @@
+./CSAX -B 40 examples.input/example.training.set examples.input/example.test.set examples.input/reactome.gmt output_location
+
+

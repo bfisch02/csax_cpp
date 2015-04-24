@@ -9,8 +9,12 @@
 using namespace std;
 #include<vector>
 
+/*representation of the data associated with one sample, be it a training or
+ * a test sample
+ */
 class Sample {
     public:
+        /*See cpp file for comments */
         Sample(int genecount);
         Sample(int genecount, string newName, vector<double> newGenes);
         int getClass();
@@ -21,6 +25,7 @@ class Sample {
         void print();
         double getGene(unsigned index);
     private:
+        /*reprsented by a vector of doubles and a name */
         vector<double> geneset;
         string name;
         int genecount;
