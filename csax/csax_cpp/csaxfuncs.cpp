@@ -264,6 +264,7 @@ vector<map<string, double>*> runGSEA(string genesets_file,
         enrichment_scores.push_back(parseGSEAOutput(gseaoutput));
         cmd = "rm -r " + outputfolder;
         system(cmd.c_str());
+        remove(inputfile.c_str());
     }
 
     return enrichment_scores;
